@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>管理者画面</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        th { background: #333; color: white; }
+        .info { color: #666; font-size: 0.9em; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>登録者一覧</h2>
+    <div class="info">※ 5秒ごとに自動で最新データに更新されます</div>
+    <button onclick="fetchData()">今すぐ手動で更新</button>
+    <table>
+        <thead><tr><th>お名前</th><th>PIN</th><th>登録日時</th></tr></thead>
+        <tbody id="user-body"><tr><td colspan="3">読み込み中...</td></tr></tbody>
+    </table>
+    <script>
+        // あなたのGASのURL
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzb4eP_O688NDZDhRx43_lqnuQUlqq9BVEmjfaue0ni0-oEdoxs8urBgPYXNtC-FLjC/exec';
+
+        async function fetchData() {
+            try {
+                const res = await fetch(GAS_URL);
+                const data = await res.json();
+                const tbody = document.getElementById('user-body');
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3">登録データはまだありません</td></tr>';
+                    return;
+                }
+                data.forEach(user => {
+                    tbody.innerHTML += `<tr><td>${user.name}</td><td>${user.pin}</td><td>${user.date}</td></tr>`;
+                });
+            } catch (err) {
+                console.error("データ取得失敗", err);
+            }
+        }
+
+        // 初回読み込み
+        fetchData();
+
+        // 5秒（5000ミリ秒）ごとに自動更新
+        setInterval(fetchData, 5000);
+    </script>
+</body>
+</html>
