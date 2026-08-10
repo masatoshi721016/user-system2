@@ -26,7 +26,7 @@
 </head>
 <body>
     <div class="card">
-        <!-- タブ（ログイン画面・新規登録時のみ表示） -->
+        <!-- タブ -->
         <div class="tab" id="auth-tabs">
             <button id="tab-login" class="active" onclick="switchTab('login')">ログイン</button>
             <button id="tab-register" onclick="switchTab('register')">新規登録</button>
@@ -62,10 +62,9 @@
             <button class="submit-btn" onclick="handleRegister()">登録する</button>
         </div>
 
-        <!-- ログイン後の入力画面（マイページ等） -->
+        <!-- ログイン後の入力画面 -->
         <div id="view-mypage" class="view">
             <h2>入力画面</h2>
-            <p>ログイン成功しました。</p>
             <div class="form-group">
                 <label>メモや入力をここに記述できます</label>
                 <input type="text" id="user-memo" placeholder="内容を入力">
@@ -95,31 +94,29 @@
             }
         }
 
-        // ログイン処理
-        async function handleLogin() {
+        // ログイン処理（ポップアップなしでマイページへ遷移）
+        function handleLogin() {
             const pin = document.getElementById('login-pin').value;
             if (!/^\d{4}$/.test(pin)) {
                 alert('エラー: PINは半角数字4桁で入力してください。');
                 return;
             }
 
-            // ポップアップを出さずにマイページ画面へ遷移
             document.getElementById('auth-tabs').style.display = 'none';
             document.getElementById('view-login').classList.remove('active');
             document.getElementById('view-mypage').classList.add('active');
             document.getElementById('login-pin').value = '';
         }
 
-        // 終了（ログアウト）処理
+        // 終了（ログアウト）処理（ポップアップなしでログイン画面へ戻る）
         function handleLogout() {
-            // ポップアップを出さずにログイン画面に戻る
             document.getElementById('auth-tabs').style.display = 'flex';
             document.getElementById('view-mypage').classList.remove('active');
             document.getElementById('view-login').classList.add('active');
             document.getElementById('user-memo').value = '';
         }
 
-        // 新規登録処理
+        // 新規登録処理（登録完了時のみポップ表示）
         async function handleRegister() {
             const name = document.getElementById('reg-name').value.trim();
             const pin = document.getElementById('reg-pin').value;
@@ -141,7 +138,6 @@
                 document.getElementById('reg-name').value = '';
                 document.getElementById('reg-pin').value = '';
 
-                // 新規登録後、自動でログイン画面に切り替える
                 switchTab('login');
             } catch (e) {
                 alert('エラーが発生しました。通信環境を確認してください。');
