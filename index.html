@@ -4,20 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登録・ログイン</title>
+    <!-- Google Fonts から丸文字（M PLUS Rounded 1c）を読み込む -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap" rel="stylesheet">
     <style>
-        /* フォントを丸文字風にし、サイズを全体的に大きく（2〜3倍）設定 */
+        /* 全体に丸文字フォントを強制適用し、文字を大きめに設定 */
         body { 
-            font-family: "Rounded Mplus 1c", "Hiragino Maru Gothic ProN", "Meiryo", sans-serif; 
+            font-family: 'M PLUS Rounded 1c', sans-serif; 
             padding: 30px; 
             max-width: 500px; 
             margin: 0 auto; 
             background: #f9f9f9; 
-            font-size: 24px; /* 全体の文字を大きく */
+            font-size: 24px; 
         }
         h2 { font-size: 36px; text-align: center; }
         .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .tab { display: flex; margin-bottom: 25px; }
-        .tab button { flex: 1; padding: 18px; border: none; background: #eee; cursor: pointer; font-weight: bold; font-size: 22px; border-radius: 10px 10px 0 0; }
+        .tab button { flex: 1; padding: 18px; border: none; background: #eee; cursor: pointer; font-weight: bold; font-size: 22px; border-radius: 10px 10px 0 0; font-family: inherit; }
         .tab button.active { background: #007BFF; color: white; }
         .form-group { margin-bottom: 25px; }
         label { display: block; margin-bottom: 10px; font-size: 22px; font-weight: bold; }
@@ -31,6 +33,7 @@
         .logout-btn:hover { background: #c82333; }
         .view { display: none; }
         .view.active { display: block; }
+        .welcome-msg { font-size: 30px; color: #007BFF; text-align: center; margin-bottom: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -73,7 +76,7 @@
 
         <!-- ログイン後の入力画面 -->
         <div id="view-mypage" class="view">
-            <h2>入力画面</h2>
+            <div id="welcome-text" class="welcome-msg"></div>
             <div class="form-group">
                 <label>メモや入力を記述</label>
                 <input type="text" id="user-memo" placeholder="内容を入力">
@@ -103,17 +106,35 @@
             }
         }
 
-        function handleLogin() {
+        // ログイン処理（スプレッドシートからデータを照合して名前を表示）
+        async function handleLogin() {
             const pin = document.getElementById('login-pin').value;
             if (!/^\d{4}$/.test(pin)) {
                 alert('エラー: PINは半角数字4桁で入力してください。');
                 return;
             }
 
-            document.getElementById('auth-tabs').style.display = 'none';
-            document.getElementById('view-login').classList.remove('active');
-            document.getElementById('view-mypage').classList.add('active');
-            document.getElementById('login-pin').value = '';
+            try {
+                // スプレッドシートから登録者データを取得してPINが一致する人を探す
+                const res = await fetch(GAS_URL);
+                const data = await res.json();
+                const user = data.find(d => String(d.pin) === pin);
+
+                if (!user) {
+                    alert('エラー: 該当するPINが見つかりません。新規登録してください。');
+                    return;
+                }
+
+                // 「○○さんこんにちは」を表示
+                document.getElementById('welcome-text').innerText = `${user.name} さん、こんにちは！`;
+
+                document.getElementById('auth-tabs').style.display = 'none';
+                document.getElementById('view-login').classList.remove('active');
+                document.getElementById('view-mypage').classList.add('active');
+                document.getElementById('login-pin').value = '';
+            } catch (e) {
+                alert('通信エラーが発生しました。');
+            }
         }
 
         function handleLogout() {
