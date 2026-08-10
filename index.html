@@ -5,18 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登録・ログイン</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; background: #f9f9f9; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .tab { display: flex; margin-bottom: 20px; }
-        .tab button { flex: 1; padding: 10px; border: none; background: #eee; cursor: pointer; font-weight: bold; }
+        /* フォントを丸文字風にし、サイズを全体的に大きく（2〜3倍）設定 */
+        body { 
+            font-family: "Rounded Mplus 1c", "Hiragino Maru Gothic ProN", "Meiryo", sans-serif; 
+            padding: 30px; 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: #f9f9f9; 
+            font-size: 24px; /* 全体の文字を大きく */
+        }
+        h2 { font-size: 36px; text-align: center; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .tab { display: flex; margin-bottom: 25px; }
+        .tab button { flex: 1; padding: 18px; border: none; background: #eee; cursor: pointer; font-weight: bold; font-size: 22px; border-radius: 10px 10px 0 0; }
         .tab button.active { background: #007BFF; color: white; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-size: 14px; }
-        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 10px; font-size: 22px; font-weight: bold; }
+        input { width: 100%; padding: 18px; box-sizing: border-box; border: 2px solid #ccc; border-radius: 10px; font-size: 24px; font-family: inherit; }
         .pin-container { position: relative; }
-        .pin-container input { padding-right: 40px; }
-        .toggle-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; }
-        .submit-btn { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .pin-container input { padding-right: 60px; }
+        .toggle-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 28px; }
+        .submit-btn { width: 100%; padding: 20px; background: #28a745; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 26px; font-family: inherit; font-weight: bold; }
         .submit-btn:hover { background: #218838; }
         .logout-btn { background: #dc3545; }
         .logout-btn:hover { background: #c82333; }
@@ -66,7 +75,7 @@
         <div id="view-mypage" class="view">
             <h2>入力画面</h2>
             <div class="form-group">
-                <label>メモや入力をここに記述できます</label>
+                <label>メモや入力を記述</label>
                 <input type="text" id="user-memo" placeholder="内容を入力">
             </div>
             <button class="submit-btn logout-btn" onclick="handleLogout()">終了（ログアウト）</button>
@@ -94,7 +103,6 @@
             }
         }
 
-        // ログイン処理（ポップアップなしでマイページへ遷移）
         function handleLogin() {
             const pin = document.getElementById('login-pin').value;
             if (!/^\d{4}$/.test(pin)) {
@@ -108,7 +116,6 @@
             document.getElementById('login-pin').value = '';
         }
 
-        // 終了（ログアウト）処理（ポップアップなしでログイン画面へ戻る）
         function handleLogout() {
             document.getElementById('auth-tabs').style.display = 'flex';
             document.getElementById('view-mypage').classList.remove('active');
@@ -116,7 +123,6 @@
             document.getElementById('user-memo').value = '';
         }
 
-        // 新規登録処理（登録完了時のみポップ表示）
         async function handleRegister() {
             const name = document.getElementById('reg-name').value.trim();
             const pin = document.getElementById('reg-pin').value;
