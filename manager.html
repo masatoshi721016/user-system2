@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>管理者画面</title>
-    <!-- 丸文字フォント（見た目のデザインのみ維持） -->
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -11,15 +10,16 @@
             padding: 15px; 
             max-width: 800px; 
             margin: 0 auto; 
-            font-size: 16px; /* 通常サイズに戻す */
+            font-size: 16px; 
         }
         h2 { font-size: 24px; }
-        .controls { margin-bottom: 15px; display: flex; gap: 10px; }
+        .controls { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
         button { padding: 8px 15px; cursor: pointer; font-size: 14px; font-family: inherit; font-weight: bold; border-radius: 6px; }
         table { border-collapse: collapse; width: 100%; background: white; font-size: 15px; }
         th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
         th { background: #f2f2f2; }
         input[type="checkbox"] { transform: scale(1.2); margin-right: 5px; }
+        .auto-status { font-size: 13px; color: #555; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -27,6 +27,7 @@
     <div class="controls">
         <button onclick="load()" style="background: #007BFF; color: white; border: none;">🔄 手動更新</button>
         <button onclick="deleteSelected()" style="background: #dc3545; color: white; border: none;">選択したデータを削除</button>
+        <span class="auto-status">※30秒ごとに自動更新されます</span>
     </div>
     
     <table id="table">
@@ -48,7 +49,8 @@
 
         async function load() {
             try {
-                const res = await fetch(GAS_URL);
+                // キャッシュを防ぐためにタイムスタンプを付与して取得
+                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
                 const data = await res.json();
                 const body = document.getElementById('body');
                 body.innerHTML = '';
@@ -59,10 +61,16 @@
                 }
 
                 data.forEach(d => {
+                    // ★ここが超重要：受け取ったPINを強制的に「4桁の0埋め文字列」に整形する
+                    let pinStr = String(d.pin || '').trim();
+                    if (pinStr.length > 0 && pinStr.length < 4) {
+                        pinStr = pinStr.padStart(4, '0');
+                    }
+
                     body.innerHTML += `<tr>
                         <td style="text-align:center;"><input type="checkbox" class="del-check" value="${d.row}"></td>
                         <td>${d.name}</td>
-                        <td>${d.pin}</td>
+                        <td>${pinStr}</td>
                         <td>${d.date}</td>
                     </tr>`;
                 });
@@ -95,8 +103,11 @@
             }, 1000);
         }
 
-        // 初回読み込みのみ（自動定期更新は停止）
+        // 初回読み込み
         load();
+
+        // 30秒（30000ミリ秒）ごとに自動更新
+        setInterval(load, 30000);
     </script>
 </body>
 </html>
