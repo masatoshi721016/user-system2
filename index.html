@@ -1,178 +1,227 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登録・ログイン</title>
-    <!-- Google Fonts から丸文字（M PLUS Rounded 1c）を読み込む -->
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap" rel="stylesheet">
-    <style>
-        body { 
-            font-family: 'M PLUS Rounded 1c', sans-serif; 
-            padding: 30px; 
-            max-width: 500px; 
-            margin: 0 auto; 
-            background: #f9f9f9; 
-            font-size: 24px; 
-        }
-        h2 { font-size: 36px; text-align: center; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .tab { display: flex; margin-bottom: 25px; }
-        .tab button { flex: 1; padding: 18px; border: none; background: #eee; cursor: pointer; font-weight: bold; font-size: 22px; border-radius: 10px 10px 0 0; font-family: inherit; }
-        .tab button.active { background: #007BFF; color: white; }
-        .form-group { margin-bottom: 25px; }
-        label { display: block; margin-bottom: 10px; font-size: 22px; font-weight: bold; }
-        input { width: 100%; padding: 18px; box-sizing: border-box; border: 2px solid #ccc; border-radius: 10px; font-size: 24px; font-family: inherit; }
-        .pin-container { position: relative; }
-        .pin-container input { padding-right: 60px; }
-        .toggle-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 28px; }
-        .submit-btn { width: 100%; padding: 20px; background: #28a745; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 26px; font-family: inherit; font-weight: bold; }
-        .submit-btn:hover { background: #218838; }
-        .logout-btn { background: #dc3545; }
-        .logout-btn:hover { background: #c82333; }
-        .view { display: none; }
-        .view.active { display: block; }
-        .welcome-msg { font-size: 30px; color: #007BFF; text-align: center; margin-bottom: 20px; font-weight: bold; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ログイン / 新規登録</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 400px;
+      margin: 20px auto;
+      padding: 0 16px;
+      background-color: #f9f9f9;
+    }
+    
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    /* 暗証番号入力欄と目のボタンの位置合わせ設定 */
+    .pin-input-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .pin-input-container input {
+      padding-right: 40px; /* 右端の目のボタンと文字が重ならない設定 */
+    }
+
+    .toggle-btn {
+      position: absolute;
+      right: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 4px;
+      user-select: none;
+    }
+
+    button.submit-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button.submit-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .msg {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-    <div class="card">
-        <!-- タブ -->
-        <div class="tab" id="auth-tabs">
-            <button id="tab-login" class="active" onclick="switchTab('login')">ログイン</button>
-            <button id="tab-register" onclick="switchTab('register')">新規登録</button>
-        </div>
 
-        <!-- ログイン画面 -->
-        <div id="view-login" class="view active">
-            <h2>ログイン</h2>
-            <div class="form-group">
-                <label>4桁PIN</label>
-                <div class="pin-container">
-                    <input type="tel" id="login-pin" placeholder="例: 0123" maxlength="4">
-                    <button type="button" class="toggle-btn" onclick="togglePin('login-pin', this)">👁️</button>
-                </div>
-            </div>
-            <button class="submit-btn" onclick="handleLogin()">ログイン</button>
-        </div>
-
-        <!-- 新規登録画面 -->
-        <div id="view-register" class="view">
-            <h2>新規登録</h2>
-            <div class="form-group">
-                <label>お名前</label>
-                <input type="text" id="reg-name" placeholder="お名前を入力">
-            </div>
-            <div class="form-group">
-                <label>4桁PIN（半角数字）</label>
-                <div class="pin-container">
-                    <input type="tel" id="reg-pin" placeholder="半角数字4桁（0始まり可）" maxlength="4">
-                    <button type="button" class="toggle-btn" onclick="togglePin('reg-pin', this)">👁️</button>
-                </div>
-            </div>
-            <button class="submit-btn" onclick="handleRegister()">登録する</button>
-        </div>
-
-        <!-- ログイン後の入力画面 -->
-        <div id="view-mypage" class="view">
-            <div id="welcome-text" class="welcome-msg"></div>
-            <div class="form-group">
-                <label>メモや入力を記述</label>
-                <input type="text" id="user-memo" placeholder="内容を入力">
-            </div>
-            <button class="submit-btn logout-btn" onclick="handleLogout()">終了（ログアウト）</button>
-        </div>
+  <!-- 新規登録フォーム -->
+  <div class="card">
+    <h2>新規登録</h2>
+    <div class="form-group">
+      <label for="regName">名前</label>
+      <input type="text" id="regName" placeholder="山田 太郎">
     </div>
 
-    <script>
-        // 新しいGASのWebアプリURLを組み込み済みです
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec';
+    <div class="form-group">
+      <!-- 指定されたラベル「暗証番号（4けた）」 -->
+      <label for="regPin">暗証番号（4けた）</label>
+      <div class="pin-input-container">
+        <!-- 初期状態は伏字（password）、入力前表示は「例：0123」 -->
+        <input 
+          type="password" 
+          id="regPin" 
+          placeholder="例：0123" 
+          maxlength="4" 
+          pattern="\d{4}"
+          inputmode="numeric"
+        />
+        <!-- 目のマークボタン -->
+        <button type="button" class="toggle-btn" onclick="togglePinVisibility('regPin', this)">👁️</button>
+      </div>
+    </div>
 
-        function switchTab(tab) {
-            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-            document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-            document.getElementById('view-login').classList.toggle('active', tab === 'login');
-            document.getElementById('view-register').classList.toggle('active', tab === 'register');
+    <button class="submit-btn" onclick="registerUser()">登録する</button>
+    <div id="regMsg" class="msg"></div>
+  </div>
+
+  <!-- ログインフォーム -->
+  <div class="card">
+    <h2>ログイン</h2>
+    <div class="form-group">
+      <label for="loginName">名前</label>
+      <input type="text" id="loginName" placeholder="山田 太郎">
+    </div>
+
+    <div class="form-group">
+      <!-- 指定されたラベル「暗証番号（4けた）」 -->
+      <label for="loginPin">暗証番号（4けた）</label>
+      <div class="pin-input-container">
+        <!-- 初期状態は伏字（password）、入力前表示は「例：0123」 -->
+        <input 
+          type="password" 
+          id="loginPin" 
+          placeholder="例：0123" 
+          maxlength="4" 
+          pattern="\d{4}"
+          inputmode="numeric"
+        />
+        <!-- 目のマークボタン -->
+        <button type="button" class="toggle-btn" onclick="togglePinVisibility('loginPin', this)">👁️</button>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="loginUser()">ログイン</button>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+
+  <script>
+    // ※お使いのGAS Web App URLを入れてください
+    const GAS_URL = "YOUR_GAS_WEB_APP_URL"; 
+
+    // 伏字(password)と表示(text)を切り替える関数
+    function togglePinVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === "password") {
+        input.type = "text";
+        btn.textContent = "🙈"; // 表示中のときは「閉じた目」
+      } else {
+        input.type = "password";
+        btn.textContent = "👁️"; // 伏字中のときは「開いた目」
+      }
+    }
+
+    // 新規登録処理
+    async function registerUser() {
+      const name = document.getElementById('regName').value.trim();
+      const pin = document.getElementById('regPin').value.trim();
+      const msg = document.getElementById('regMsg');
+
+      if (!name || !pin || pin.length !== 4) {
+        alert("名前と4桁の暗証番号を入力してください。");
+        return;
+      }
+
+      msg.textContent = "登録中...";
+
+      try {
+        await fetch(GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ action: "add", name: name, pin: pin })
+        });
+        msg.textContent = "登録が完了しました！";
+        document.getElementById('regName').value = "";
+        document.getElementById('regPin').value = "";
+      } catch (err) {
+        msg.textContent = "エラーが発生しました。";
+        console.error(err);
+      }
+    }
+
+    // ログイン処理
+    async function loginUser() {
+      const name = document.getElementById('loginName').value.trim();
+      const pin = document.getElementById('loginPin').value.trim();
+      const msg = document.getElementById('loginMsg');
+
+      if (!name || !pin) {
+        alert("名前と暗証番号を入力してください。");
+        return;
+      }
+
+      msg.textContent = "確認中...";
+
+      try {
+        const res = await fetch(GAS_URL);
+        const data = await res.json();
+        
+        // 名前とPINが一致するか確認
+        const user = data.find(u => u.name === name && String(u.pin) === pin);
+
+        if (user) {
+          msg.textContent = "ログイン成功！";
+        } else {
+          msg.textContent = "名前または暗証番号が正しくありません。";
         }
-
-        function togglePin(id, btn) {
-            const input = document.getElementById(id);
-            if (input.type === 'password' || input.type === 'tel') {
-                input.type = 'text';
-                btn.textContent = '🔒';
-            } else {
-                input.type = 'tel';
-                btn.textContent = '👁️';
-            }
-        }
-
-        async function handleLogin() {
-            let pin = document.getElementById('login-pin').value.trim();
-            if (!/^\d{4}$/.test(pin)) {
-                alert('エラー: PINは半角数字4桁で入力してください。');
-                return;
-            }
-
-            try {
-                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
-                const data = await res.json();
-                
-                // 取得したPINを4桁文字列補正して比較
-                const user = data.find(d => {
-                    let userPin = String(d.pin || '').trim();
-                    if (userPin.length > 0 && userPin.length < 4) userPin = userPin.padStart(4, '0');
-                    return userPin === pin;
-                });
-
-                if (!user) {
-                    alert('エラー: 該当するPINが見つかりません。新規登録してください。');
-                    return;
-                }
-
-                document.getElementById('welcome-text').innerText = `${user.name} さん、こんにちは！`;
-                document.getElementById('auth-tabs').style.display = 'none';
-                document.getElementById('view-login').classList.remove('active');
-                document.getElementById('view-mypage').classList.add('active');
-                document.getElementById('login-pin').value = '';
-            } catch (e) {
-                alert('通信エラーが発生しました。');
-            }
-        }
-
-        function handleLogout() {
-            document.getElementById('auth-tabs').style.display = 'flex';
-            document.getElementById('view-mypage').classList.remove('active');
-            document.getElementById('view-login').classList.add('active');
-            document.getElementById('user-memo').value = '';
-        }
-
-        async function handleRegister() {
-            const name = document.getElementById('reg-name').value.trim();
-            let pin = document.getElementById('reg-pin').value.trim();
-
-            if (!name) {
-                alert('エラー: お名前を入力してください。');
-                return;
-            }
-            if (!/^\d{4}$/.test(pin)) {
-                alert('エラー: PINは半角数字4桁で入力してください（0123なども可能です）。');
-                return;
-            }
-
-            // PINを明示的な文字列（'付き）として送信
-            const data = { action: 'add', name: name, pin: "'" + pin };
-            try {
-                await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
-                alert('登録が完了しました！ログイン画面に移動します。');
-                
-                document.getElementById('reg-name').value = '';
-                document.getElementById('reg-pin').value = '';
-
-                switchTab('login');
-            } catch (e) {
-                alert('エラーが発生しました。通信環境を確認してください。');
-            }
-        }
-    </script>
+      } catch (err) {
+        msg.textContent = "エラーが発生しました。";
+        console.error(err);
+      }
+    }
+  </script>
 </body>
 </html>
