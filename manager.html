@@ -45,11 +45,11 @@
     </table>
 
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzJe_4nzoYW4r0ij1OZ6lc74mIxoBrE1K0B-8PcEE_XHmbItwwIi9mY55qoWY3cnKjx/exec';
+        // 新しいGASのWebアプリURLを組み込み済みです
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec';
 
         async function load() {
             try {
-                // キャッシュを防ぐためにタイムスタンプを付与して取得
                 const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
                 const data = await res.json();
                 const body = document.getElementById('body');
@@ -61,8 +61,8 @@
                 }
 
                 data.forEach(d => {
-                    // ★ここが超重要：受け取ったPINを強制的に「4桁の0埋め文字列」に整形する
-                    let pinStr = String(d.pin || '').trim();
+                    // PINを4桁文字列（0123）へ確実に復元
+                    let pinStr = String(d.pin || '').trim().replace(/^'/, '');
                     if (pinStr.length > 0 && pinStr.length < 4) {
                         pinStr = pinStr.padStart(4, '0');
                     }
@@ -106,7 +106,7 @@
         // 初回読み込み
         load();
 
-        // 30秒（30000ミリ秒）ごとに自動更新
+        // 30秒ごとに自動更新
         setInterval(load, 30000);
     </script>
 </body>
