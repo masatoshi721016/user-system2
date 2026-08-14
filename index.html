@@ -21,7 +21,7 @@
         .tab button.active { background: #007BFF; color: white; }
         .form-group { margin-bottom: 25px; }
         label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 20px; }
-        input { width: 100%; padding: 18px; border: 2px solid #ccc; border-radius: 10px; font-size: 24px; box-sizing: border-box; font-family: inherit; }
+        input, select { width: 100%; padding: 18px; border: 2px solid #ccc; border-radius: 10px; font-size: 24px; box-sizing: border-box; font-family: inherit; background: white; }
         .pin-container { position: relative; display: flex; align-items: center; }
         .pin-container input { padding-right: 50px; }
         .toggle-btn { position: absolute; right: 15px; background: none; border: none; font-size: 26px; cursor: pointer; }
@@ -73,20 +73,33 @@
             <button class="submit-btn" onclick="handleRegister()">登録する</button>
         </div>
 
-        <!-- ログイン後の入力画面 -->
+        <!-- ログイン後の入力画面（選択・リスト・時間指定） -->
         <div id="view-input" class="view">
             <div id="welcome" class="welcome-msg"></div>
             <div id="send-status" class="status-msg"></div>
+            
             <div class="form-group">
-                <label>メモや入力を記述</label>
-                <input type="text" id="user-memo" placeholder="内容を入力">
+                <label>項目を選択</label>
+                <select id="input-item">
+                    <option value="出勤">出勤</option>
+                    <option value="退勤">退勤</option>
+                    <option value="休憩入り">休憩入り</option>
+                    <option value="休憩戻り">休憩戻り</option>
+                </select>
             </div>
+
+            <div class="form-group">
+                <label>時間指定</label>
+                <input type="time" id="input-time">
+            </div>
+
             <button class="submit-btn" style="background:#007BFF;" onclick="handleSend()">送信して終了</button>
         </div>
     </div>
 
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
+        let currentUserName = "";
 
         function switchTab(target) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -132,11 +145,18 @@
                 const user = data.find(u => String(u.pin) === pin);
 
                 if (user) {
-                    document.getElementById('welcome').innerText = user.name + " さん、こんにちは！";
+                    currentUserName = user.name;
+                    document.getElementById('welcome').innerText = currentUserName + " さん、こんにちは！";
                     document.getElementById('tabs').style.display = 'none';
                     document.getElementById('login-pin').value = '';
-                    statusEl.innerText = "";
                     
+                    // 現在の時間を自動で時間入力欄の初期値にセット
+                    const now = new Date();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    document.getElementById('input-time').value = `${hours}:${minutes}`;
+
+                    statusEl.innerText = "";
                     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
                     document.getElementById('view-input').classList.add('active');
                 } else {
@@ -186,16 +206,33 @@
             }
         }
 
-        function handleSend() {
+        async function handleSend() {
+            const item = document.getElementById('input-item').value;
+            const time = document.getElementById('input-time').value;
             const statusEl = document.getElementById('send-status');
+
+            if (!time) {
+                statusEl.innerText = "時間を指定してください";
+                return;
+            }
+
             statusEl.innerText = "送信中…";
 
-            setTimeout(() => {
-                document.getElementById('user-memo').value = '';
-                statusEl.innerText = "";
-                document.getElementById('tabs').style.display = 'flex';
-                switchTab('login');
-            }, 400);
+            try {
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ action: 'record', name: currentUserName, item: item, time: time })
+                });
+
+                setTimeout(() => {
+                    statusEl.innerText = "";
+                    document.getElementById('tabs').style.display = 'flex';
+                    switchTab('login');
+                }, 500);
+            } catch (e) {
+                statusEl.innerText = "送信に失敗しました";
+            }
         }
     </script>
 </body>
