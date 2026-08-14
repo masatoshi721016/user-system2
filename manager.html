@@ -9,7 +9,7 @@
         body { 
             font-family: 'M PLUS Rounded 1c', sans-serif; 
             padding: 20px; 
-            max-width: 700px; 
+            max-width: 800px; 
             margin: 0 auto; 
             background: #f9f9f9; 
             font-size: 20px; 
@@ -69,18 +69,19 @@
         </table>
     </div>
 
-    <!-- ユーザー情報ページビュー（複数人同時表示対応） -->
+    <!-- ユーザー情報ページビュー（1人1行の横並び表示） -->
     <div id="view-info" class="card view">
         <button class="action-btn back-btn" onclick="showListView()">← 一覧に戻る</button>
-        <h2 id="info-title">ユーザー情報</h2>
+        <h2 id="info-title">ユーザー情報（記録一覧）</h2>
         <div id="info-status" class="status-msg"></div>
         <table id="record-table">
             <thead>
                 <tr>
                     <th>名前</th>
-                    <th>項目</th>
-                    <th>時間</th>
-                    <th>登録日時</th>
+                    <th>出勤</th>
+                    <th>休憩入り</th>
+                    <th>休憩戻り</th>
+                    <th>退勤</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -137,12 +138,6 @@
 
             const userNames = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-name'));
             
-            if (userNames.length === 1) {
-                document.getElementById('info-title').innerText = userNames[0] + " さん の情報・履歴";
-            } else {
-                document.getElementById('info-title').innerText = "選択されたユーザー（" + userNames.length + "名）の情報・履歴";
-            }
-            
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('view-info').classList.add('active');
             
@@ -162,16 +157,32 @@
                     return;
                 }
 
+                // ユーザーごとにデータをまとめるマップを作成
+                const userSummary = {};
+                userNames.forEach(name => {
+                    userSummary[name] = { name: name, 出勤: '-', 休憩入り: '-', 休憩戻り: '-', 退勤: '-' };
+                });
+
                 records.forEach(rec => {
+                    if (userSummary[rec.name]) {
+                        userSummary[rec.name][rec.item] = rec.time;
+                    }
+                });
+
+                // テーブルに反映
+                userNames.forEach(name => {
+                    const info = userSummary[name];
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${rec.name}</td>
-                        <td>${rec.item}</td>
-                        <td>${rec.time}</td>
-                        <td>${rec.date}</td>
+                        <td><b>${info.name}</b></td>
+                        <td>${info.出勤}</td>
+                        <td>${info.休憩入り}</td>
+                        <td>${info.休憩戻り}</td>
+                        <td>${info.退勤}</td>
                     `;
                     tbody.appendChild(tr);
                 });
+
                 statusEl.innerText = "";
             } catch (e) {
                 statusEl.innerText = "履歴の読み込みに失敗しました";
