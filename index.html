@@ -30,6 +30,7 @@
         .view { display: none; }
         .view.active { display: block; }
         .welcome-msg { font-size: 28px; color: #007BFF; text-align: center; margin-bottom: 20px; font-weight: bold; }
+        .status-msg { text-align: center; font-size: 20px; color: #666; margin-bottom: 15px; min-height: 30px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -43,6 +44,7 @@
         <!-- ログイン画面 -->
         <div id="view-login" class="view active">
             <h2>ログイン</h2>
+            <div id="login-status" class="status-msg"></div>
             <div class="form-group">
                 <label>暗証番号（4けた）</label>
                 <div class="pin-container">
@@ -56,6 +58,7 @@
         <!-- 新規登録画面 -->
         <div id="view-register" class="view">
             <h2>新規登録</h2>
+            <div id="reg-status" class="status-msg"></div>
             <div class="form-group">
                 <label>お名前</label>
                 <input type="text" id="reg-name" placeholder="山田 太郎">
@@ -73,6 +76,7 @@
         <!-- ログイン後の入力画面 -->
         <div id="view-input" class="view">
             <div id="welcome" class="welcome-msg"></div>
+            <div id="send-status" class="status-msg"></div>
             <div class="form-group">
                 <label>メモや入力を記述</label>
                 <input type="text" id="user-memo" placeholder="内容を入力">
@@ -84,11 +88,12 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
 
-        // タブとビューの切り替えを正しく同期させる関数
         function switchTab(target) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('btn-login').classList.remove('active');
             document.getElementById('btn-register').classList.remove('active');
+            document.getElementById('login-status').innerText = "";
+            document.getElementById('reg-status').innerText = "";
 
             if (target === 'login') {
                 document.getElementById('view-login').classList.add('active');
@@ -112,10 +117,14 @@
 
         async function handleLogin() {
             const pin = document.getElementById('login-pin').value.trim();
+            const statusEl = document.getElementById('login-status');
+
             if (!/^\d{4}$/.test(pin)) {
-                alert("4桁の数字で入力してください。");
+                statusEl.innerText = "4桁の数字を入力してください";
                 return;
             }
+
+            statusEl.innerText = "確認中…";
 
             try {
                 const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
@@ -126,60 +135,67 @@
                     document.getElementById('welcome').innerText = user.name + " さん、こんにちは！";
                     document.getElementById('tabs').style.display = 'none';
                     document.getElementById('login-pin').value = '';
+                    statusEl.innerText = "";
                     
                     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
                     document.getElementById('view-input').classList.add('active');
                 } else {
-                    alert("該当する暗証番号が見つかりません。");
+                    statusEl.innerText = "暗証番号が一致しません";
                 }
             } catch (e) {
-                alert("通信エラーが発生しました。");
+                statusEl.innerText = "通信エラーが発生しました";
             }
         }
 
         async function handleRegister() {
             const name = document.getElementById('reg-name').value.trim();
             const pin = document.getElementById('reg-pin').value.trim();
+            const statusEl = document.getElementById('reg-status');
 
             if (!name) {
-                alert("お名前を入力してください。");
+                statusEl.innerText = "お名前を入力してください";
                 return;
             }
             if (!/^\d{4}$/.test(pin)) {
-                alert("暗証番号は4桁の数字で入力してください。");
+                statusEl.innerText = "4桁の数字を入力してください";
                 return;
             }
 
+            statusEl.innerText = "登録中…";
+
             try {
-                // 重複チェック
                 const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
                 const data = await res.json();
                 if (data.some(u => String(u.pin) === pin)) {
-                    alert("この暗証番号は既に登録されています。");
+                    statusEl.innerText = "この暗証番号は既に登録されています";
                     return;
                 }
 
-                // 登録送信（エラーを防ぐため確実に動作する設定）
                 await fetch(GAS_URL, { 
                     method: 'POST', 
                     mode: 'no-cors', 
                     body: JSON.stringify({ action: 'add', name: name, pin: pin }) 
                 });
 
-                alert("登録が完了しました！");
                 document.getElementById('reg-name').value = '';
                 document.getElementById('reg-pin').value = '';
+                statusEl.innerText = "";
                 switchTab('login');
             } catch (e) {
-                alert("エラーが発生しました。");
+                statusEl.innerText = "エラーが発生しました";
             }
         }
 
         function handleSend() {
-            alert("送信しました。");
-            document.getElementById('user-memo').value = '';
-            document.getElementById('tabs').style.display = 'flex';
-            switchTab('login');
+            const statusEl = document.getElementById('send-status');
+            statusEl.innerText = "送信中…";
+
+            setTimeout(() => {
+                document.getElementById('user-memo').value = '';
+                statusEl.innerText = "";
+                document.getElementById('tabs').style.display = 'flex';
+                switchTab('login');
+            }, 400);
         }
     </script>
 </body>
