@@ -1,33 +1,174 @@
-<!-- index.html の <script> 部分を以下に差し替え -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン・登録</title>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'M PLUS Rounded 1c', sans-serif; 
+            padding: 20px; 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: #f9f9f9; 
+            font-size: 24px; 
+        }
+        h2 { font-size: 32px; text-align: center; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .tab { display: flex; margin-bottom: 25px; }
+        .tab button { flex: 1; padding: 18px; border: none; background: #eee; cursor: pointer; font-weight: bold; font-size: 20px; border-radius: 10px; font-family: inherit; }
+        .tab button.active { background: #007BFF; color: white; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 20px; }
+        input { width: 100%; padding: 18px; border: 2px solid #ccc; border-radius: 10px; font-size: 24px; box-sizing: border-box; font-family: inherit; }
+        .pin-container { position: relative; display: flex; align-items: center; }
+        .pin-container input { padding-right: 50px; }
+        .toggle-btn { position: absolute; right: 15px; background: none; border: none; font-size: 26px; cursor: pointer; }
+        .submit-btn { width: 100%; padding: 20px; background: #28a745; color: white; border: none; border-radius: 10px; font-size: 24px; font-weight: bold; cursor: pointer; font-family: inherit; }
+        .submit-btn:hover { background: #218838; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .welcome-msg { font-size: 28px; color: #007BFF; text-align: center; margin-bottom: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- タブ -->
+        <div class="tab" id="tabs">
+            <button class="active" onclick="show('view-login')">ログイン</button>
+            <button onclick="show('view-register')">新規登録</button>
+        </div>
+
+        <!-- ログイン画面 -->
+        <div id="view-login" class="view active">
+            <h2>ログイン</h2>
+            <div class="form-group">
+                <label>暗証番号（4けた）</label>
+                <div class="pin-container">
+                    <input type="password" id="login-pin" placeholder="例：0123" maxlength="4" inputmode="numeric">
+                    <button type="button" class="toggle-btn" onclick="togglePin('login-pin', this)">👁️</button>
+                </div>
+            </div>
+            <button class="submit-btn" onclick="handleLogin()">ログイン</button>
+        </div>
+
+        <!-- 新規登録画面 -->
+        <div id="view-register" class="view">
+            <h2>新規登録</h2>
+            <div class="form-group">
+                <label>お名前</label>
+                <input type="text" id="reg-name" placeholder="山田 太郎">
+            </div>
+            <div class="form-group">
+                <label>暗証番号（4けた）</label>
+                <div class="pin-container">
+                    <input type="password" id="reg-pin" placeholder="例：0123" maxlength="4" inputmode="numeric">
+                    <button type="button" class="toggle-btn" onclick="togglePin('reg-pin', this)">👁️</button>
+                </div>
+            </div>
+            <button class="submit-btn" onclick="handleRegister()">登録する</button>
+        </div>
+
+        <!-- ログイン後の入力画面 -->
+        <div id="view-input" class="view">
+            <div id="welcome" class="welcome-msg"></div>
+            <div class="form-group">
+                <label>メモや入力を記述</label>
+                <input type="text" id="user-memo" placeholder="内容を入力">
+            </div>
+            <button class="submit-btn" style="background:#007BFF;" onclick="handleSend()">送信して終了</button>
+        </div>
+    </div>
+
     <script>
-        const GAS_URL = "あなたのGASのURL";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
 
-        // ... (show, toggle関数はそのまま)
+        function show(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
 
-        async function handleRegister() {
-            const name = document.getElementById('reg-name').value;
-            const pin = document.getElementById('reg-pin').value;
-            
-            // クライアント側チェック
+        function togglePin(id, btn) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                btn.textContent = "🙈";
+            } else {
+                input.type = "password";
+                btn.textContent = "👁️";
+            }
+        }
+
+        async function handleLogin() {
+            const pin = document.getElementById('login-pin').value.trim();
             if (!/^\d{4}$/.test(pin)) {
-                alert("4桁の数字を入力してください");
+                alert("4桁の数字で入力してください。");
                 return;
             }
 
-            // サーバーへ送信（no-corsを削除して結果を受け取る）
-            const response = await fetch(GAS_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({action:'add', name, pin})
-            });
-            const result = await response.json();
+            try {
+                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
+                const data = await res.json();
+                const user = data.find(u => String(u.pin) === pin);
 
-            if (result.status === "error") {
-                alert(result.message);
-            } else {
-                alert("登録しました");
-                location.reload();
+                if (user) {
+                    document.getElementById('welcome').innerText = user.name + " さん、こんにちは！";
+                    document.getElementById('tabs').style.display = 'none';
+                    document.getElementById('login-pin').value = '';
+                    show('view-input');
+                } else {
+                    alert("該当する暗証番号が見つかりません。");
+                }
+            } catch (e) {
+                alert("通信エラーが発生しました。");
             }
         }
-        
-        // ... (handleLogin, goHome 関数)
+
+        async function handleRegister() {
+            const name = document.getElementById('reg-name').value.trim();
+            const pin = document.getElementById('reg-pin').value.trim();
+
+            if (!name) {
+                alert("お名前を入力してください。");
+                return;
+            }
+            if (!/^\d{4}$/.test(pin)) {
+                alert("暗証番号は4桁の数字で入力してください。");
+                return;
+            }
+
+            try {
+                // 重複チェックのためにデータを取得
+                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
+                const data = await res.json();
+                if (data.some(u => String(u.pin) === pin)) {
+                    alert("この暗証番号は既に登録されています。");
+                    return;
+                }
+
+                // 登録送信
+                await fetch(GAS_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify({ action: 'add', name: name, pin: pin }) 
+                });
+
+                alert("登録が完了しました！");
+                document.getElementById('reg-name').value = '';
+                document.getElementById('reg-pin').value = '';
+                show('view-login');
+            } catch (e) {
+                alert("エラーが発生しました。");
+            }
+        }
+
+        function handleSend() {
+            alert("送信しました。");
+            document.getElementById('user-memo').value = '';
+            document.getElementById('tabs').style.display = 'flex';
+            show('view-login');
+        }
     </script>
+</body>
+</html>
