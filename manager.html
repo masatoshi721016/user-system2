@@ -96,7 +96,6 @@
             try {
                 const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
                 const data = await res.json();
-                // 戻り値がオブジェクト形式か配列形式かによって対応
                 allUsers = Array.isArray(data) ? data : (data.users || []);
                 
                 const tbody = document.querySelector('#user-table tbody');
