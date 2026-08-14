@@ -48,7 +48,8 @@
             <div class="form-group">
                 <label>暗証番号（4けた）</label>
                 <div class="pin-container">
-                    <input type="password" id="login-pin" placeholder="例：0123" maxlength="4" inputmode="numeric">
+                    <!-- autocomplete="off" を追加して自動入力を防止 -->
+                    <input type="password" id="login-pin" placeholder="例：0123" maxlength="4" inputmode="numeric" autocomplete="off">
                     <button type="button" class="toggle-btn" onclick="togglePin('login-pin', this)">👁️</button>
                 </div>
             </div>
@@ -61,12 +62,12 @@
             <div id="reg-status" class="status-msg"></div>
             <div class="form-group">
                 <label>お名前</label>
-                <input type="text" id="reg-name" placeholder="山田 太郎">
+                <input type="text" id="reg-name" placeholder="山田 太郎" autocomplete="off">
             </div>
             <div class="form-group">
                 <label>暗証番号（4けた）</label>
                 <div class="pin-container">
-                    <input type="password" id="reg-pin" placeholder="例：0123" maxlength="4" inputmode="numeric">
+                    <input type="password" id="reg-pin" placeholder="例：0123" maxlength="4" inputmode="numeric" autocomplete="off">
                     <button type="button" class="toggle-btn" onclick="togglePin('reg-pin', this)">👁️</button>
                 </div>
             </div>
@@ -107,6 +108,11 @@
             document.getElementById('btn-register').classList.remove('active');
             document.getElementById('login-status').innerText = "";
             document.getElementById('reg-status').innerText = "";
+
+            // 画面切り替え時にすべての入力欄を確実に空にする
+            document.getElementById('login-pin').value = "";
+            document.getElementById('reg-name').value = "";
+            document.getElementById('reg-pin').value = "";
 
             if (target === 'login') {
                 document.getElementById('view-login').classList.add('active');
@@ -150,7 +156,6 @@
                     document.getElementById('tabs').style.display = 'none';
                     document.getElementById('login-pin').value = '';
                     
-                    // 現在の時間を自動で時間入力欄の初期値にセット
                     const now = new Date();
                     const hours = String(now.getHours()).padStart(2, '0');
                     const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -197,8 +202,7 @@
                     body: JSON.stringify({ action: 'add', name: name, pin: pin }) 
                 });
 
-                document.getElementById('reg-name').value = '';
-                document.getElementById('reg-pin').value = '';
+                // 登録成功後、入力欄を完全にクリアしてログイン画面へ
                 statusEl.innerText = "";
                 switchTab('login');
             } catch (e) {
