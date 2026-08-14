@@ -9,41 +9,52 @@
         body { 
             font-family: 'M PLUS Rounded 1c', sans-serif; 
             padding: 20px; 
-            max-width: 600px; 
+            max-width: 650px; 
             margin: 0 auto; 
             background: #f9f9f9; 
             font-size: 20px; 
         }
         h2 { font-size: 28px; text-align: center; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ccc; padding: 12px; text-align: center; font-size: 18px; }
-        th { background: #007BFF; color: white; }
-        button.delete-btn { 
-            background: #dc3545; 
-            color: white; 
+        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .action-btn { 
+            flex: 1; 
+            padding: 12px; 
             border: none; 
-            padding: 8px 16px; 
-            border-radius: 6px; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            font-weight: bold; 
             cursor: pointer; 
             font-family: inherit; 
-            font-size: 16px; 
         }
-        button.delete-btn:hover { background: #c82333; }
+        .update-btn { background: #007BFF; color: white; }
+        .update-btn:hover { background: #0056b3; }
+        .delete-btn { background: #dc3545; color: white; }
+        .delete-btn:hover { background: #c82333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 12px; text-align: center; font-size: 18px; }
+        th { background: #333; color: white; }
         .status-msg { text-align: center; font-size: 18px; color: #666; margin-bottom: 10px; font-weight: bold; }
+        input[type="checkbox"] { transform: scale(1.4); cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>登録者一覧（管理画面）</h2>
         <div id="manager-status" class="status-msg"></div>
+        
+        <div class="btn-group">
+            <button class="action-btn update-btn" onclick="loadUsers()">手動更新</button>
+            <button class="action-btn delete-btn" onclick="deleteSelected()">選択した項目を削除</button>
+        </div>
+
         <table id="user-table">
             <thead>
                 <tr>
+                    <th style="width: 50px;"><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)"></th>
                     <th>名前</th>
                     <th>PIN</th>
                     <th>登録日時</th>
-                    <th>操作</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -57,18 +68,24 @@
             const statusEl = document.getElementById('manager-status');
             statusEl.innerText = "読み込み中…";
             try {
-                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
+                // キャッシュを完全に回避するためのタイムスタンプ＋ランダム値
+                const res = await fetch(GAS_URL + '?t=' + new Date().getTime() + '&r=' + Math.random());
                 const data = await res.json();
                 const tbody = document.querySelector('#user-table tbody');
                 tbody.innerHTML = '';
                 
+                if (data.length === 0) {
+                    statusEl.innerText = "登録されているデータはありません";
+                    return;
+                }
+
                 data.forEach(user => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
+                        <td><input type="checkbox" class="row-checkbox" value="${user.row}"></td>
                         <td>${user.name}</td>
                         <td>${user.pin}</td>
                         <td>${user.date || ''}</td>
-                        <td><button class="delete-btn" onclick="deleteUser(${user.row})">削除</button></td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -78,7 +95,19 @@
             }
         }
 
-        async function deleteUser(row) {
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll('.row-checkbox');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+        }
+
+        async function deleteSelected() {
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                document.getElementById('manager-status').innerText = "削除する項目が選択されていません";
+                return;
+            }
+
+            const rows = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
             const statusEl = document.getElementById('manager-status');
             statusEl.innerText = "削除中…";
 
@@ -86,12 +115,13 @@
                 await fetch(GAS_URL, { 
                     method: 'POST', 
                     mode: 'no-cors', 
-                    body: JSON.stringify({ action: 'delete', row: row }) 
+                    body: JSON.stringify({ action: 'delete', rows: rows }) 
                 });
 
-                // ポップを出さず、画面上の表示メッセージで処理し、1秒後に一覧を自動更新
+                // ポップを出さず、メッセージ表示後に自動で最新状態を再読み込み
                 setTimeout(() => {
                     statusEl.innerText = "";
+                    document.getElementById('select-all').checked = false;
                     loadUsers();
                 }, 1000);
             } catch (e) {
@@ -99,6 +129,7 @@
             }
         }
 
+        // ページを開いた時に自動読み込み
         loadUsers();
     </script>
 </body>
