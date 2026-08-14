@@ -16,7 +16,7 @@
         }
         h2 { font-size: 28px; text-align: center; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
         .action-btn { 
             flex: 1; 
             padding: 12px; 
@@ -26,9 +26,12 @@
             font-weight: bold; 
             cursor: pointer; 
             font-family: inherit; 
+            min-width: 140px;
         }
         .update-btn { background: #007BFF; color: white; }
         .update-btn:hover { background: #0056b3; }
+        .info-btn { background: #17a2b8; color: white; }
+        .info-btn:hover { background: #138496; }
         .delete-btn { background: #dc3545; color: white; }
         .delete-btn:hover { background: #c82333; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -36,16 +39,21 @@
         th { background: #333; color: white; }
         .status-msg { text-align: center; font-size: 18px; color: #666; margin-bottom: 10px; font-weight: bold; }
         input[type="checkbox"] { transform: scale(1.4); cursor: pointer; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .back-btn { background: #6c757d; color: white; margin-bottom: 15px; }
     </style>
 </head>
 <body>
-    <div class="card">
+    <!-- 一覧画面ビュー -->
+    <div id="view-list" class="card view active">
         <h2>登録者一覧（管理画面）</h2>
         <div id="manager-status" class="status-msg"></div>
         
         <div class="btn-group">
             <button class="action-btn update-btn" onclick="loadUsers()">手動更新</button>
-            <button class="action-btn delete-btn" onclick="deleteSelected()">選択した項目を削除</button>
+            <button class="action-btn info-btn" onclick="goToUserInfo()">ユーザー情報へ</button>
+            <button class="action-btn delete-btn" onclick="deleteSelected()">選択項目を削除</button>
         </div>
 
         <table id="user-table">
@@ -61,28 +69,48 @@
         </table>
     </div>
 
+    <!-- ユーザー情報ページビュー -->
+    <div id="view-info" class="card view">
+        <button class="action-btn back-btn" onclick="showListView()">← 一覧に戻る</button>
+        <h2 id="info-title">ユーザー情報</h2>
+        <div id="info-status" class="status-msg"></div>
+        <table id="record-table">
+            <thead>
+                <tr>
+                    <th>項目</th>
+                    <th>時間</th>
+                    <th>登録日時</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
+        let allUsers = [];
 
         async function loadUsers() {
             const statusEl = document.getElementById('manager-status');
             statusEl.innerText = "読み込み中…";
             try {
-                // キャッシュを完全に回避するためのタイムスタンプ＋ランダム値
-                const res = await fetch(GAS_URL + '?t=' + new Date().getTime() + '&r=' + Math.random());
+                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
                 const data = await res.json();
+                // 戻り値がオブジェクト形式か配列形式かによって対応
+                allUsers = Array.isArray(data) ? data : (data.users || []);
+                
                 const tbody = document.querySelector('#user-table tbody');
                 tbody.innerHTML = '';
                 
-                if (data.length === 0) {
+                if (allUsers.length === 0) {
                     statusEl.innerText = "登録されているデータはありません";
                     return;
                 }
 
-                data.forEach(user => {
+                allUsers.forEach(user => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><input type="checkbox" class="row-checkbox" value="${user.row}"></td>
+                        <td><input type="checkbox" class="row-checkbox" value="${user.row}" data-name="${user.name}"></td>
                         <td>${user.name}</td>
                         <td>${user.pin}</td>
                         <td>${user.date || ''}</td>
@@ -98,6 +126,60 @@
         function toggleSelectAll(master) {
             const checkboxes = document.querySelectorAll('.row-checkbox');
             checkboxes.forEach(cb => cb.checked = master.checked);
+        }
+
+        async function goToUserInfo() {
+            const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                document.getElementById('manager-status').innerText = "ユーザーが選択されていません";
+                return;
+            }
+            if (checkedBoxes.length > 1) {
+                document.getElementById('manager-status').innerText = "ユーザー情報画面は1名ずつ表示します。1名のみ選択してください。";
+                return;
+            }
+
+            const userName = checkedBoxes[0].getAttribute('data-name');
+            document.getElementById('info-title').innerText = userName + " さん の情報・履歴";
+            
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-info').classList.add('active');
+            
+            const statusEl = document.getElementById('info-status');
+            statusEl.innerText = "読み込み中…";
+
+            try {
+                const res = await fetch(GAS_URL + '?name=' + encodeURIComponent(userName) + '&t=' + new Date().getTime());
+                const data = await res.json();
+                const records = data.records || [];
+                
+                const tbody = document.querySelector('#record-table tbody');
+                tbody.innerHTML = '';
+
+                if (records.length === 0) {
+                    statusEl.innerText = "記録データはありません";
+                    return;
+                }
+
+                records.forEach(rec => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${rec.item}</td>
+                        <td>${rec.time}</td>
+                        <td>${rec.date}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                statusEl.innerText = "";
+            } catch (e) {
+                statusEl.innerText = "履歴の読み込みに失敗しました";
+            }
+        }
+
+        function showListView() {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-list').classList.add('active');
+            document.getElementById('manager-status').innerText = "";
         }
 
         async function deleteSelected() {
@@ -118,7 +200,6 @@
                     body: JSON.stringify({ action: 'delete', rows: rows }) 
                 });
 
-                // ポップを出さず、メッセージ表示後に自動で最新状態を再読み込み
                 setTimeout(() => {
                     statusEl.innerText = "";
                     document.getElementById('select-all').checked = false;
@@ -129,7 +210,6 @@
             }
         }
 
-        // ページを開いた時に自動読み込み
         loadUsers();
     </script>
 </body>
