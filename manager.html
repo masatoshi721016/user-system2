@@ -9,7 +9,7 @@
         body { 
             font-family: 'M PLUS Rounded 1c', sans-serif; 
             padding: 20px; 
-            max-width: 650px; 
+            max-width: 700px; 
             margin: 0 auto; 
             background: #f9f9f9; 
             font-size: 20px; 
@@ -69,7 +69,7 @@
         </table>
     </div>
 
-    <!-- ユーザー情報ページビュー -->
+    <!-- ユーザー情報ページビュー（複数人同時表示対応） -->
     <div id="view-info" class="card view">
         <button class="action-btn back-btn" onclick="showListView()">← 一覧に戻る</button>
         <h2 id="info-title">ユーザー情報</h2>
@@ -77,6 +77,7 @@
         <table id="record-table">
             <thead>
                 <tr>
+                    <th>名前</th>
                     <th>項目</th>
                     <th>時間</th>
                     <th>登録日時</th>
@@ -133,13 +134,15 @@
                 document.getElementById('manager-status').innerText = "ユーザーが選択されていません";
                 return;
             }
-            if (checkedBoxes.length > 1) {
-                document.getElementById('manager-status').innerText = "ユーザー情報画面は1名ずつ表示します。1名のみ選択してください。";
-                return;
-            }
 
-            const userName = checkedBoxes[0].getAttribute('data-name');
-            document.getElementById('info-title').innerText = userName + " さん の情報・履歴";
+            // 選択されたユーザーの名前を配列として取得
+            const userNames = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-name'));
+            
+            if (userNames.length === 1) {
+                document.getElementById('info-title').innerText = userNames[0] + " さん の情報・履歴";
+            } else {
+                document.getElementById('info-title').innerText = "選択されたユーザー（" + userNames.length + "名）の情報・履歴";
+            }
             
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('view-info').classList.add('active');
@@ -148,7 +151,7 @@
             statusEl.innerText = "読み込み中…";
 
             try {
-                const res = await fetch(GAS_URL + '?name=' + encodeURIComponent(userName) + '&t=' + new Date().getTime());
+                const res = await fetch(GAS_URL + '?names=' + encodeURIComponent(userNames.join(',')) + '&t=' + new Date().getTime());
                 const data = await res.json();
                 const records = data.records || [];
                 
@@ -156,13 +159,14 @@
                 tbody.innerHTML = '';
 
                 if (records.length === 0) {
-                    statusEl.innerText = "記録データはありません";
+                    statusEl.innerText = "該当する記録データはありません";
                     return;
                 }
 
                 records.forEach(rec => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
+                        <td>${rec.name}</td>
                         <td>${rec.item}</td>
                         <td>${rec.time}</td>
                         <td>${rec.date}</td>
