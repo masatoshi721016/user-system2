@@ -34,10 +34,10 @@
 </head>
 <body>
     <div class="card">
-        <!-- タブ -->
+        <!-- タブボタン -->
         <div class="tab" id="tabs">
-            <button class="active" onclick="show('view-login')">ログイン</button>
-            <button onclick="show('view-register')">新規登録</button>
+            <button id="btn-login" class="active" onclick="switchTab('login')">ログイン</button>
+            <button id="btn-register" onclick="switchTab('register')">新規登録</button>
         </div>
 
         <!-- ログイン画面 -->
@@ -84,9 +84,19 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
 
-        function show(id) {
+        // タブとビューの切り替えを正しく同期させる関数
+        function switchTab(target) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
+            document.getElementById('btn-login').classList.remove('active');
+            document.getElementById('btn-register').classList.remove('active');
+
+            if (target === 'login') {
+                document.getElementById('view-login').classList.add('active');
+                document.getElementById('btn-login').classList.add('active');
+            } else if (target === 'register') {
+                document.getElementById('view-register').classList.add('active');
+                document.getElementById('btn-register').classList.add('active');
+            }
         }
 
         function togglePin(id, btn) {
@@ -116,7 +126,9 @@
                     document.getElementById('welcome').innerText = user.name + " さん、こんにちは！";
                     document.getElementById('tabs').style.display = 'none';
                     document.getElementById('login-pin').value = '';
-                    show('view-input');
+                    
+                    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                    document.getElementById('view-input').classList.add('active');
                 } else {
                     alert("該当する暗証番号が見つかりません。");
                 }
@@ -139,7 +151,7 @@
             }
 
             try {
-                // 重複チェックのためにデータを取得
+                // 重複チェック
                 const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
                 const data = await res.json();
                 if (data.some(u => String(u.pin) === pin)) {
@@ -147,7 +159,7 @@
                     return;
                 }
 
-                // 登録送信
+                // 登録送信（エラーを防ぐため確実に動作する設定）
                 await fetch(GAS_URL, { 
                     method: 'POST', 
                     mode: 'no-cors', 
@@ -157,7 +169,7 @@
                 alert("登録が完了しました！");
                 document.getElementById('reg-name').value = '';
                 document.getElementById('reg-pin').value = '';
-                show('view-login');
+                switchTab('login');
             } catch (e) {
                 alert("エラーが発生しました。");
             }
@@ -167,7 +179,7 @@
             alert("送信しました。");
             document.getElementById('user-memo').value = '';
             document.getElementById('tabs').style.display = 'flex';
-            show('view-login');
+            switchTab('login');
         }
     </script>
 </body>
