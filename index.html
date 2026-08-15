@@ -6,58 +6,56 @@
     <title>体調管理チェック</title>
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'M PLUS Rounded 1c', sans-serif; padding: 15px; max-width: 480px; margin: 0 auto; background: #f0f4f8; color: #333; font-size: 16px; }
+        body { font-family: 'M PLUS Rounded 1c', sans-serif; padding: 15px; max-width: 480px; margin: 0 auto; background: #f0f4f8; color: #333; }
         .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 15px; }
-        h2 { text-align: center; font-size: 20px; margin-top: 0; color: #2c3e50; }
+        h2 { text-align: center; font-size: 20px; color: #2c3e50; }
         .form-group { margin-bottom: 16px; }
         label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 15px; color: #444; }
-        input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #f8fafc; font-family: 'M PLUS Rounded 1c', sans-serif; }
-        input:focus { border-color: #3b82f6; outline: none; background: #fff; }
-        textarea { height: 80px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #f8fafc; }
         .btn { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .tab-group { display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 2px solid #e2e8f0; }
-        .tab { flex: 1; padding: 12px; text-align: center; background: #f1f5f9; cursor: pointer; font-weight: bold; font-size: 15px; color: #64748b; }
-        .tab.active { background: #3b82f6; color: white; }
-        .view { display: none; } .view.active { display: block; }
         .row-inputs { display: flex; gap: 8px; }
         .row-inputs > div { flex: 1; text-align: center; }
-        .status-text { text-align: center; font-weight: bold; color: #e11d48; margin-bottom: 10px; font-size: 14px; min-height: 20px; }
-        .pin-container { position: relative; display: flex; align-items: center; }
-        .toggle-eye { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: #64748b; }
+        .row-inputs small { font-size: 11px; color: #64748b; display: block; margin-bottom: 4px; }
+        .view { display: none; } .view.active { display: block; }
     </style>
 </head>
 <body>
     <div id="view-auth" class="card view active">
-        <div class="tab-group"><div id="tab-login" class="tab active" onclick="switchTab('login')">ログイン</div><div id="tab-reg" class="tab" onclick="switchTab('reg')">新規登録</div></div>
-        <div id="form-login">
-            <h2>ログイン</h2>
-            <div class="status-text" id="login-status"></div>
-            <div class="form-group"><label>4桁の暗証番号 (PIN)</label><div class="pin-container"><input type="password" id="login-pin" maxlength="4" inputmode="numeric"><button type="button" class="toggle-eye" onclick="togglePinVisibility('login-pin', this)">👁</button></div></div>
-            <button class="btn" onclick="login()">ログイン</button>
-        </div>
-        <div id="form-reg" style="display:none;">
-            <h2>新規登録</h2>
-            <div class="status-text" id="reg-status"></div>
-            <div class="form-group"><label>お名前</label><input type="text" id="reg-name"></div>
-            <div class="form-group"><label>4桁の暗証番号 (PIN)</label><div class="pin-container"><input type="password" id="reg-pin" maxlength="4" inputmode="numeric"><button type="button" class="toggle-eye" onclick="togglePinVisibility('reg-pin', this)">👁</button></div></div>
-            <button class="btn" onclick="register()">登録</button>
-        </div>
+        <h2>ログイン</h2>
+        <div class="form-group"><label>4桁のPIN</label><input type="password" id="login-pin" maxlength="4" inputmode="numeric"></div>
+        <button class="btn" onclick="login()">ログイン</button>
     </div>
 
     <div id="view-form" class="card view">
         <h2>体調管理チェック</h2>
-        <div class="form-group"><label>体調</label><select id="体調"><option value="">選択してください</option><option>〇</option><option>△</option><option>✕</option></select></div>
-        <label>昨夜就寝時間 (4桁)</label><input type="text" id="昨夜就寝時間" placeholder="例: 2300" inputmode="numeric" onblur="formatTime(this)">
-        <label>本日起床時間 (4桁)</label><input type="text" id="本日起床時間" placeholder="例: 0700" inputmode="numeric" onblur="formatTime(this)">
-        <label>体温</label><input type="text" id="体温" placeholder="例: 36.5" inputmode="decimal" onblur="formatTemp(this)">
+        <div class="form-group"><label>体調</label><select id="体調"><option value="">選択</option><option>〇</option><option>△</option><option>✕</option></select></div>
+        
+        <label>服薬状況</label>
+        <div class="form-group row-inputs">
+            <div><small>今朝</small><select id="服薬今朝"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>昼</small><select id="服薬昨昼"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>夕</small><select id="服薬昨夕"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>就寝前</small><select id="服薬就寝前"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
+        </div>
+
+        <label>食事状況</label>
+        <div class="form-group row-inputs">
+            <div><small>今朝</small><select id="食事今朝"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>昼</small><select id="食事昨昼"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>夕</small><select id="食事昨夕"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
+        </div>
+
+        <div class="form-group"><label>昨夜就寝時間</label><input type="text" id="昨夜就寝時間" placeholder="例: 2300" inputmode="numeric" onblur="formatTime(this)"></div>
+        <div class="form-group"><label>本日起床時間</label><input type="text" id="本日起床時間" placeholder="例: 0700" inputmode="numeric" onblur="formatTime(this)"></div>
+        <div class="form-group"><label>体温</label><input type="text" id="体温" placeholder="例: 36.5" inputmode="decimal" onblur="formatTemp(this)"></div>
+        <div class="form-group"><label>特記事項</label><textarea id="特記事項" placeholder="なし"></textarea></div>
         <button class="btn" onclick="goToConfirm()">確認画面へ</button>
     </div>
 
     <div id="view-confirm" class="card view">
-        <h2>入力内容の確認</h2>
-        <div id="confirm-content"></div>
+        <h2>内容確認</h2>
+        <div id="confirm-content" style="font-size:14px; background:#f8fafc; padding:10px; border-radius:8px;"></div>
         <button class="btn" onclick="submitData()">送信して終了</button>
-        <button class="btn" style="background:#64748b;" onclick="changeView('view-form')">修正する</button>
     </div>
 
     <script>
@@ -76,50 +74,37 @@
             if (!isNaN(num)) el.value = num.toFixed(1);
         }
 
-        // ... (以下、既存のlogin/register/submitDataロジックはそのまま維持してください)
         let currentUser = "";
         let formData = {};
-        function switchTab(type) {
-            if(type==='login') {
-                document.getElementById('tab-login').classList.add('active'); document.getElementById('tab-reg').classList.remove('active');
-                document.getElementById('form-login').style.display = 'block'; document.getElementById('form-reg').style.display = 'none';
-            } else {
-                document.getElementById('tab-reg').classList.add('active'); document.getElementById('tab-login').classList.remove('active');
-                document.getElementById('form-login').style.display = 'none'; document.getElementById('form-reg').style.display = 'block';
-            }
-        }
-        function togglePinVisibility(id, btn) {
-            const input = document.getElementById(id);
-            input.type = (input.type === "password") ? "text" : "password";
-            btn.style.color = (input.type === "text") ? "#3b82f6" : "#64748b";
-        }
-        async function register() {
-            const name = document.getElementById('reg-name').value;
-            const pin = document.getElementById('reg-pin').value;
-            const res = await fetch(`${GAS_URL}?action=add&name=${encodeURIComponent(name)}&pin=${pin}`);
-            const result = await res.json();
-            if(result.status === 'success') { switchTab('login'); document.getElementById('login-status').innerText = "登録完了しました"; }
-            else { document.getElementById('reg-status').innerText = "エラー: " + result.status; }
-        }
+        
         async function login() {
             const pin = document.getElementById('login-pin').value;
-            const res = await fetch(GAS_URL);
+            const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             const users = await res.json();
             const user = users.find(u => u.pin === pin);
             if(user) { currentUser = user.name; changeView('view-form'); }
-            else { document.getElementById('login-status').innerText = "PINが違います"; }
+            else { alert("PINが違います"); }
         }
+
         function goToConfirm() {
-            formData = { 昨夜就寝時間: document.getElementById('昨夜就寝時間').value, 本日起床時間: document.getElementById('本日起床時間').value, 体温: document.getElementById('体温').value };
-            document.getElementById('confirm-content').innerHTML = `<p>就寝: ${formData.昨夜就寝時間}<br>起床: ${formData.本日起床時間}<br>体温: ${formData.体温}</p>`;
+            const ids = ['体調', '服薬今朝', '服薬昨昼', '服薬昨夕', '服薬就寝前', '食事今朝', '食事昨昼', '食事昨夕', '昨夜就寝時間', '本日起床時間', '体温', '特記事項'];
+            let html = "";
+            ids.forEach(id => {
+                const val = document.getElementById(id).value;
+                formData[id] = val;
+                html += `<p><b>${id}:</b> ${val || '-'}</p>`;
+            });
+            document.getElementById('confirm-content').innerHTML = html;
             changeView('view-confirm');
         }
+
         async function submitData() {
             let query = `${GAS_URL}?action=record&name=${encodeURIComponent(currentUser)}`;
             for (let key in formData) query += `&${key}=${encodeURIComponent(formData[key])}`;
             await fetch(query);
             location.reload();
         }
+
         function changeView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
