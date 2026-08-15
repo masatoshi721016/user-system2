@@ -107,7 +107,7 @@
 
                     records.forEach(rec => {
                         html += `<tr>`;
-                        html += `<td><b>${rec["日付"] || '-'}</b></td>`;
+                        html += `<td><b>${rec["記録日"] || rec["日付"] || '-'}</b></td>`;
                         html += `<td>${rec["体調"] || '-'}</td>`;
                         html += `<td>${rec["服薬今朝"] || '-'}</td>`;
                         html += `<td>${rec["服薬昨昼"] || '-'}</td>`;
@@ -133,7 +133,6 @@
                 detailContent.innerHTML = "<p>選択されたユーザーの記録データがまだありません。</p>";
             }
 
-            // ページ切り替え
             document.getElementById('page-list').classList.remove('active');
             document.getElementById('page-detail').classList.add('active');
             document.getElementById('status-msg').innerText = "";
