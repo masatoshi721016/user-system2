@@ -13,6 +13,9 @@
         label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 15px; color: #444; }
         input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #f8fafc; }
         .btn { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .tab-group { display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 2px solid #e2e8f0; }
+        .tab { flex: 1; padding: 12px; text-align: center; background: #f1f5f9; cursor: pointer; font-weight: bold; font-size: 15px; color: #64748b; }
+        .tab.active { background: #3b82f6; color: white; }
         .row-inputs { display: flex; gap: 8px; }
         .row-inputs > div { flex: 1; text-align: center; }
         .row-inputs small { font-size: 11px; color: #64748b; display: block; margin-bottom: 4px; }
@@ -21,9 +24,23 @@
 </head>
 <body>
     <div id="view-auth" class="card view active">
-        <h2>ログイン</h2>
-        <div class="form-group"><label>4桁のPIN</label><input type="password" id="login-pin" maxlength="4" inputmode="numeric"></div>
-        <button class="btn" onclick="login()">ログイン</button>
+        <div class="tab-group">
+            <div id="tab-login" class="tab active" onclick="switchTab('login')">ログイン</div>
+            <div id="tab-reg" class="tab" onclick="switchTab('reg')">新規登録</div>
+        </div>
+        
+        <div id="form-login">
+            <h2>ログイン</h2>
+            <div class="form-group"><label>4桁のPIN</label><input type="password" id="login-pin" maxlength="4" inputmode="numeric"></div>
+            <button class="btn" onclick="login()">ログイン</button>
+        </div>
+
+        <div id="form-reg" style="display:none;">
+            <h2>新規登録</h2>
+            <div class="form-group"><label>お名前</label><input type="text" id="reg-name"></div>
+            <div class="form-group"><label>4桁のPIN</label><input type="password" id="reg-pin" maxlength="4" inputmode="numeric"></div>
+            <button class="btn" onclick="register()">登録</button>
+        </div>
     </div>
 
     <div id="view-form" class="card view">
@@ -76,14 +93,58 @@
 
         let currentUser = "";
         let formData = {};
+
+        function switchTab(type) {
+            if(type==='login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-reg').classList.remove('active');
+                document.getElementById('form-login').style.display = 'block';
+                document.getElementById('form-reg').style.display = 'none';
+            } else {
+                document.getElementById('tab-reg').classList.add('active');
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('form-login').style.display = 'none';
+                document.getElementById('form-reg').style.display = 'block';
+            }
+        }
         
+        async function register() {
+            const name = document.getElementById('reg-name').value;
+            const pin = document.getElementById('reg-pin').value;
+            if(!name || !pin) { alert("名前とPINを入力してください"); return; }
+
+            const res = await fetch(`${GAS_URL}?action=add&name=${encodeURIComponent(name)}&pin=${pin}&t=${new Date().getTime()}`);
+            const result = await res.json();
+            
+            if(result.status === 'success') { 
+                // 入力欄を完全にクリア
+                document.getElementById('reg-name').value = '';
+                document.getElementById('reg-pin').value = '';
+                document.getElementById('login-pin').value = '';
+                
+                switchTab('login'); 
+                alert("登録が完了しました。ログインしてください。");
+            } else if(result.status === 'exists_pin') {
+                alert("すでに使われているPINコードです");
+            } else if(result.status === 'exists_name') {
+                alert("すでに登録されているお名前です");
+            } else {
+                alert("エラーが発生しました");
+            }
+        }
+
         async function login() {
             const pin = document.getElementById('login-pin').value;
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             const users = await res.json();
             const user = users.find(u => u.pin === pin);
-            if(user) { currentUser = user.name; changeView('view-form'); }
-            else { alert("PINが違います"); }
+            if(user) { 
+                currentUser = user.name; 
+                document.getElementById('login-pin').value = ''; // ログイン時もクリア
+                changeView('view-form'); 
+            } else { 
+                alert("PINが違います"); 
+            }
         }
 
         function goToConfirm() {
