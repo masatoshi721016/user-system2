@@ -82,13 +82,31 @@
             let val = el.value.replace(/[^0-9]/g, '');
             if (!val) { el.value = ""; return; }
             while (val.length < 4) val = "0" + val;
+            let hours = parseInt(val.substring(0, 2), 10);
+            let mins = parseInt(val.substring(2, 4), 10);
+            if (hours >= 24 || mins >= 60) {
+                alert("無効な時間です（例: 2359まで）。入力内容を確認してください。");
+                el.value = "";
+                return;
+            }
             el.value = val.substring(0, 2) + ":" + val.substring(2, 4);
         }
+
         function formatTemp(el) {
             let val = el.value.replace(/[^0-9.]/g, '');
             if (!val) { el.value = ""; return; }
             let num = parseFloat(val);
-            if (!isNaN(num)) el.value = num.toFixed(1);
+            if (isNaN(num)) { el.value = ""; return; }
+            // 365などの入力に対応（300〜450の範囲なら10で割る）
+            if (!val.includes('.') && num >= 100 && num <= 450) {
+                num = num / 10;
+            }
+            if (num < 30 || num > 45) {
+                alert("体温の範囲が正しくありません（例: 36.5）");
+                el.value = "";
+                return;
+            }
+            el.value = num.toFixed(1);
         }
 
         let currentUser = "";
@@ -117,11 +135,9 @@
             const result = await res.json();
             
             if(result.status === 'success') { 
-                // 入力欄を完全にクリア
                 document.getElementById('reg-name').value = '';
                 document.getElementById('reg-pin').value = '';
                 document.getElementById('login-pin').value = '';
-                
                 switchTab('login'); 
                 alert("登録が完了しました。ログインしてください。");
             } else if(result.status === 'exists_pin') {
@@ -140,7 +156,7 @@
             const user = users.find(u => u.pin === pin);
             if(user) { 
                 currentUser = user.name; 
-                document.getElementById('login-pin').value = ''; // ログイン時もクリア
+                document.getElementById('login-pin').value = ''; 
                 changeView('view-form'); 
             } else { 
                 alert("PINが違います"); 
