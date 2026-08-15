@@ -157,7 +157,6 @@
             if(user) { 
                 currentUser = user.name; 
                 document.getElementById('login-pin').value = ''; 
-                // ログイン成功時に今日の日付を自動セット
                 document.getElementById('記録日').value = new Date().toISOString().split('T')[0];
                 changeView('view-form'); 
             } else { 
