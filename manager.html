@@ -18,6 +18,7 @@
         .page { display: none; }
         .page.active { display: block; }
         .table-container { overflow-x: auto; margin-bottom: 20px; }
+        .badge-deleted { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -100,7 +101,12 @@
                 const records = userRecordsMap[name];
                 if (records && records.length > 0) {
                     hasData = true;
-                    let html = `<h3>${name} さんの記録</h3>`;
+
+                    // ステータス（削除済みかどうか）のチェック
+                    const isDeleted = records.some(rec => rec["ステータス"] === "過去に削除済み");
+                    const deletedBadge = isDeleted ? `<span class="badge-deleted">過去に削除済み</span>` : "";
+
+                    let html = `<h3>${name} さんの記録 ${deletedBadge}</h3>`;
                     html += `<div class="table-container"><table><thead><tr>`;
                     html += `<th>記録日</th><th>体調</th><th>服薬今朝</th><th>服薬昼</th><th>服薬夕</th><th>服薬就寝前</th><th>食事今朝</th><th>食事昼</th><th>食事夕</th><th>昨夜就寝時間</th><th>本日起床時間</th><th>体温</th><th>特記事項</th><th>登録日時(更新)</th>`;
                     html += `</tr></thead><tbody>`;
