@@ -4,44 +4,56 @@
     <meta charset="UTF-8">
     <title>管理画面</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f4f6f8; font-size: 14px; max-width: 900px; margin: 0 auto; }
+        body { font-family: sans-serif; padding: 15px; background: #f4f6f8; font-size: 14px; max-width: 1100px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
         th { background: #f1f3f5; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
         .btn-primary { background: #007BFF; color: white; }
         .btn-success { background: #28a745; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
         .btn-danger { background: #dc3545; color: white; }
         .status { margin-bottom: 10px; font-weight: bold; color: #333; min-height: 20px; }
-        .record-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .table-container { overflow-x: auto; margin-bottom: 20px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>登録者一覧管理</h2>
-        <div class="status" id="status-msg"></div>
-        <div style="margin-bottom: 10px; display: flex; gap: 10px;">
-            <button class="btn-primary" onclick="loadUsers()">手動更新</button>
-            <button class="btn-success" onclick="showDetails()">選択ユーザーの詳細（複数可）</button>
-            <button class="btn-danger" onclick="deleteSelected()">選択項目を削除</button>
+    <!-- 一覧ページ -->
+    <div id="page-list" class="page active">
+        <div class="card">
+            <h2>登録者一覧管理</h2>
+            <div class="status" id="status-msg"></div>
+            <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+                <button class="btn-primary" onclick="loadUsers()">手動更新</button>
+                <button class="btn-success" onclick="showDetailsPage()">選択ユーザーの詳細表示</button>
+                <button class="btn-danger" onclick="deleteSelected()">選択項目を削除</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>選択</th>
+                        <th>名前</th>
+                        <th>PIN</th>
+                        <th>登録日時</th>
+                    </tr>
+                </thead>
+                <tbody id="user-tbody"></tbody>
+            </table>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>選択</th>
-                    <th>名前</th>
-                    <th>PIN</th>
-                    <th>登録日時</th>
-                </tr>
-            </thead>
-            <tbody id="user-tbody"></tbody>
-        </table>
     </div>
 
-    <div class="card" id="detail-card" style="display:none;">
-        <h3 id="detail-title">選択ユーザーの記録詳細</h3>
-        <div id="detail-content"></div>
+    <!-- 詳細ページ -->
+    <div id="page-detail" class="page">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">選択ユーザーの記録詳細</h2>
+                <button class="btn-secondary" onclick="backToList()">← 一覧に戻る</button>
+            </div>
+            <div id="detail-content"></div>
+        </div>
     </div>
 
     <script>
@@ -67,7 +79,7 @@
             document.getElementById('status-msg').innerText = "最新データを読み込みました";
         }
 
-        async function showDetails() {
+        async function showDetailsPage() {
             const checked = document.querySelectorAll('.row-checkbox:checked');
             if (checked.length === 0) {
                 document.getElementById('status-msg').innerText = "詳細を見るユーザーを1名以上選択してください";
@@ -75,36 +87,61 @@
             }
             
             const names = Array.from(checked).map(cb => cb.getAttribute('data-name')).join(',');
-            document.getElementById('status-msg').innerText = "選択されたユーザーの詳細データを読み込み中...";
+            document.getElementById('status-msg').innerText = "詳細データを読み込み中...";
             
             const res = await fetch(`${GAS_URL}?action=getMultipleRecords&names=${encodeURIComponent(names)}&t=${new Date().getTime()}`);
-            const records = await res.json();
+            const userRecordsMap = await res.json();
             
-            const detailCard = document.getElementById('detail-card');
             const detailContent = document.getElementById('detail-content');
+            detailContent.innerHTML = "";
             
-            if (!records || records.length === 0) {
-                detailContent.innerHTML = "<p>選択されたユーザーの記録データがまだありません。</p>";
-            } else {
-                let html = "";
-                records.forEach(rec => {
-                    html += `<div class="record-box"><table>`;
-                    // 名前・日付・更新日時を先に表示
-                    html += `<tr><th style="width:30%; background:#e2e8f0;">名前</th><td><b>${rec["名前"]}</b></td></tr>`;
-                    html += `<tr><th style="background:#e2e8f0;">記録日</th><td><b>${rec["日付"]}</b></td></tr>`;
-                    html += `<tr><th style="background:#e2e8f0;">登録日時(更新)</th><td>${rec["更新日時"]}</td></tr>`;
-                    
-                    for (let key in rec) {
-                        if (key !== "名前" && key !== "日付" && key !== "更新日時") {
-                            html += `<tr><th>${key}</th><td>${rec[key]}</td></tr>`;
-                        }
-                    }
-                    html += `</table></div>`;
-                });
-                detailContent.innerHTML = html;
+            let hasData = false;
+            for (let name in userRecordsMap) {
+                const records = userRecordsMap[name];
+                if (records && records.length > 0) {
+                    hasData = true;
+                    let html = `<h3>${name} さんの記録</h3>`;
+                    html += `<div class="table-container"><table><thead><tr>`;
+                    html += `<th>記録日</th><th>体調</th><th>服薬今朝</th><th>服薬昼</th><th>服薬夕</th><th>服薬就寝前</th><th>食事今朝</th><th>食事昼</th><th>食事夕</th><th>昨夜就寝時間</th><th>本日起床時間</th><th>体温</th><th>特記事項</th><th>登録日時(更新)</th>`;
+                    html += `</tr></thead><tbody>`;
+
+                    records.forEach(rec => {
+                        html += `<tr>`;
+                        html += `<td><b>${rec["日付"] || '-'}</b></td>`;
+                        html += `<td>${rec["体調"] || '-'}</td>`;
+                        html += `<td>${rec["服薬今朝"] || '-'}</td>`;
+                        html += `<td>${rec["服薬昨昼"] || '-'}</td>`;
+                        html += `<td>${rec["服薬昨夕"] || '-'}</td>`;
+                        html += `<td>${rec["服薬就寝前"] || '-'}</td>`;
+                        html += `<td>${rec["食事今朝"] || '-'}</td>`;
+                        html += `<td>${rec["食事昨昼"] || '-'}</td>`;
+                        html += `<td>${rec["食事昨夕"] || '-'}</td>`;
+                        html += `<td>${rec["昨夜就寝時間"] || '-'}</td>`;
+                        html += `<td>${rec["本日起床時間"] || '-'}</td>`;
+                        html += `<td>${rec["体温"] || '-'}</td>`;
+                        html += `<td style="text-align:left; max-width:150px; overflow:hidden; text-overflow:ellipsis;">${rec["特記事項"] || '-'}</td>`;
+                        html += `<td>${rec["更新日時"] || '-'}</td>`;
+                        html += `</tr>`;
+                    });
+
+                    html += `</tbody></table></div>`;
+                    detailContent.innerHTML += html;
+                }
             }
-            detailCard.style.display = "block";
-            document.getElementById('status-msg').innerText = "詳細を表示しました";
+
+            if (!hasData) {
+                detailContent.innerHTML = "<p>選択されたユーザーの記録データがまだありません。</p>";
+            }
+
+            // ページ切り替え
+            document.getElementById('page-list').classList.remove('active');
+            document.getElementById('page-detail').classList.add('active');
+            document.getElementById('status-msg').innerText = "";
+        }
+
+        function backToList() {
+            document.getElementById('page-detail').classList.remove('active');
+            document.getElementById('page-list').classList.add('active');
         }
 
         async function deleteSelected() {
@@ -123,7 +160,6 @@
             });
 
             document.getElementById('status-msg').innerText = "選択項目を削除しました";
-            document.getElementById('detail-card').style.display = "none";
             loadUsers();
         }
 
