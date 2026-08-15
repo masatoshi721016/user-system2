@@ -45,6 +45,7 @@
 
     <div id="view-form" class="card view">
         <h2>体調管理チェック</h2>
+        <div class="form-group"><label>記録日</label><input type="date" id="記録日"></div>
         <div class="form-group"><label>体調</label><select id="体調"><option value="">選択</option><option>〇</option><option>△</option><option>✕</option></select></div>
         
         <label>服薬状況</label>
@@ -97,7 +98,6 @@
             if (!val) { el.value = ""; return; }
             let num = parseFloat(val);
             if (isNaN(num)) { el.value = ""; return; }
-            // 365などの入力に対応（300〜450の範囲なら10で割る）
             if (!val.includes('.') && num >= 100 && num <= 450) {
                 num = num / 10;
             }
@@ -106,7 +106,7 @@
                 el.value = "";
                 return;
             }
-            el.value = num.toFixed(1);
+            el.value = num.toFixed(1) + "（°）";
         }
 
         let currentUser = "";
@@ -157,6 +157,8 @@
             if(user) { 
                 currentUser = user.name; 
                 document.getElementById('login-pin').value = ''; 
+                // ログイン成功時に今日の日付を自動セット
+                document.getElementById('記録日').value = new Date().toISOString().split('T')[0];
                 changeView('view-form'); 
             } else { 
                 alert("PINが違います"); 
@@ -164,7 +166,7 @@
         }
 
         function goToConfirm() {
-            const ids = ['体調', '服薬今朝', '服薬昨昼', '服薬昨夕', '服薬就寝前', '食事今朝', '食事昨昼', '食事昨夕', '昨夜就寝時間', '本日起床時間', '体温', '特記事項'];
+            const ids = ['記録日', '体調', '服薬今朝', '服薬昨昼', '服薬昨夕', '服薬就寝前', '食事今朝', '食事昨昼', '食事昨夕', '昨夜就寝時間', '本日起床時間', '体温', '特記事項'];
             let html = "";
             ids.forEach(id => {
                 const val = document.getElementById(id).value;
