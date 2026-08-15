@@ -11,33 +11,110 @@
         th { background: #f1f3f5; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
         .btn-primary { background: #007BFF; color: white; }
+        .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
+        .status { margin-bottom: 10px; font-weight: bold; color: #333; min-height: 20px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>登録者一覧管理</h2>
-        <button class="btn-primary" onclick="loadUsers()">手動更新</button>
-        <button class="btn-danger" onclick="deleteSelected()">選択削除</button>
+        <div class="status" id="status-msg"></div>
+        <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+            <button class="btn-primary" onclick="loadUsers()">手動更新</button>
+            <button class="btn-success" onclick="showDetails()">選択ユーザーの詳細</button>
+            <button class="btn-danger" onclick="deleteSelected()">選択項目を削除</button>
+        </div>
         <table>
-            <thead><tr><th>選択</th><th>名前</th><th>PIN</th><th>登録日時</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>選択</th>
+                    <th>名前</th>
+                    <th>PIN</th>
+                    <th>登録日時</th>
+                </tr>
+            </thead>
             <tbody id="user-tbody"></tbody>
         </table>
     </div>
+
+    <div class="card" id="detail-card" style="display:none;">
+        <h3 id="detail-title">ユーザー詳細記録</h3>
+        <div id="detail-content"></div>
+    </div>
+
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
+
         async function loadUsers() {
+            document.getElementById('status-msg').innerText = "読み込み中...";
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             const users = await res.json();
             const tbody = document.getElementById('user-tbody');
-            tbody.innerHTML = users.map(u => `<tr><td><input type="checkbox" class="row-checkbox" value="${u.row}"></td><td>${u.name}</td><td>${u.pin}</td><td>${u.date}</td></tr>`).join('');
+            tbody.innerHTML = '';
+
+            users.forEach(u => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><input type="checkbox" class="row-checkbox" value="${u.row}" data-name="${u.name}"></td>
+                        <td>${u.name}</td>
+                        <td>${u.pin}</td>
+                        <td>${u.date}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('status-msg').innerText = "最新データを読み込みました";
         }
+
+        async function showDetails() {
+            const checked = document.querySelectorAll('.row-checkbox:checked');
+            if (checked.length !== 1) {
+                document.getElementById('status-msg').innerText = "詳細を見るユーザーを1名だけ選択してください";
+                return;
+            }
+            const name = checked[0].getAttribute('data-name');
+            document.getElementById('status-msg').innerText = `${name}さんの詳細データを読み込み中...`;
+            
+            const res = await fetch(`${GAS_URL}?action=getRecords&name=${encodeURIComponent(name)}&t=${new Date().getTime()}`);
+            const record = await res.json();
+            
+            const detailCard = document.getElementById('detail-card');
+            const detailContent = document.getElementById('detail-content');
+            
+            if (!record) {
+                detailContent.innerHTML = "<p>まだ記録データがありません。</p>";
+            } else {
+                let html = "<table>";
+                for (let key in record) {
+                    html += `<tr><th style="width:30%;">${key}</th><td>${record[key]}</td></tr>`;
+                }
+                html += "</table>";
+                detailContent.innerHTML = html;
+            }
+            detailCard.style.display = "block";
+            document.getElementById('status-msg').innerText = `${name}さんの詳細を表示しました`;
+        }
+
         async function deleteSelected() {
             const checked = document.querySelectorAll('.row-checkbox:checked');
+            if (checked.length === 0) {
+                document.getElementById('status-msg').innerText = "削除する項目が選択されていません";
+                return;
+            }
+
             const rows = Array.from(checked).map(cb => parseInt(cb.value));
-            await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', rows: rows }) });
+            document.getElementById('status-msg').innerText = "削除処理中...";
+
+            await fetch(GAS_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: 'delete', rows: rows }) 
+            });
+
+            document.getElementById('status-msg').innerText = "選択項目を削除しました";
+            document.getElementById('detail-card').style.display = "none";
             loadUsers();
         }
+
         loadUsers();
     </script>
 </body>
