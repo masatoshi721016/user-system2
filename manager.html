@@ -18,7 +18,8 @@
         .page { display: none; }
         .page.active { display: block; }
         .table-container { overflow-x: auto; margin-bottom: 20px; }
-        .badge-deleted { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; vertical-align: middle; }
+        .badge-deleted { background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px; vertical-align: middle; }
+        .row-deleted { background: #fdf2f2; color: #666; }
     </style>
 </head>
 <body>
@@ -68,10 +69,14 @@
             tbody.innerHTML = '';
 
             users.forEach(u => {
+                const isDeleted = (u.status === "削除済み");
+                const badge = isDeleted ? `<span class="badge-deleted">削除済み</span>` : "";
+                const rowClass = isDeleted ? `class="row-deleted"` : "";
+
                 tbody.innerHTML += `
-                    <tr>
+                    <tr ${rowClass}>
                         <td><input type="checkbox" class="row-checkbox" value="${u.row}" data-name="${u.name}"></td>
-                        <td>${u.name}</td>
+                        <td>${u.name} ${badge}</td>
                         <td>${u.pin}</td>
                         <td>${u.date}</td>
                     </tr>
@@ -102,18 +107,28 @@
                 if (records && records.length > 0) {
                     hasData = true;
 
-                    // ステータス（削除済みかどうか）のチェック
+                    // 降順（日付の新しい順）にソート
+                    records.sort((a, b) => {
+                        const dateA = new Date(a["記録日"] || a["日付"] || 0);
+                        const dateB = new Date(b["記録日"] || b["日付"] || 0);
+                        return dateB - dateA;
+                    });
+
                     const isDeleted = records.some(rec => rec["ステータス"] === "過去に削除済み");
                     const deletedBadge = isDeleted ? `<span class="badge-deleted">過去に削除済み</span>` : "";
 
                     let html = `<h3>${name} さんの記録 ${deletedBadge}</h3>`;
                     html += `<div class="table-container"><table><thead><tr>`;
-                    html += `<th>記録日</th><th>体調</th><th>服薬今朝</th><th>服薬昼</th><th>服薬夕</th><th>服薬就寝前</th><th>食事今朝</th><th>食事昼</th><th>食事夕</th><th>昨夜就寝時間</th><th>本日起床時間</th><th>体温</th><th>特記事項</th><th>登録日時(更新)</th>`;
+                    html += `<th>日付</th><th>体調</th><th>服薬今朝</th><th>服薬昼</th><th>服薬夕</th><th>服薬就寝前</th><th>食事今朝</th><th>食事昼</th><th>食事夕</th><th>昨夜就寝時間</th><th>本日起床時間</th><th>体温</th><th>特記事項</th><th>登録日時(更新)</th>`;
                     html += `</tr></thead><tbody>`;
 
                     records.forEach(rec => {
+                        // 日付から時間部分を除外する（YYYY/MM/DD のみ抽出）
+                        let rawDate = rec["記録日"] || rec["日付"] || '-';
+                        let dateOnly = rawDate.split(' ')[0];
+
                         html += `<tr>`;
-                        html += `<td><b>${rec["記録日"] || rec["日付"] || '-'}</b></td>`;
+                        html += `<td><b>${dateOnly}</b></td>`;
                         html += `<td>${rec["体調"] || '-'}</td>`;
                         html += `<td>${rec["服薬今朝"] || '-'}</td>`;
                         html += `<td>${rec["服薬昨昼"] || '-'}</td>`;
