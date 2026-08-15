@@ -48,7 +48,7 @@
             <div class="form-group">
                 <label>4桁の暗証番号 (PIN)</label>
                 <div class="pin-container">
-                    <input type="password" id="login-pin" maxlength="4" placeholder="••••">
+                    <input type="password" id="login-pin" maxlength="4" placeholder="••••" inputmode="numeric">
                     <button type="button" class="toggle-eye" onclick="togglePinVisibility('login-pin', this)">👁</button>
                 </div>
             </div>
@@ -62,7 +62,7 @@
             <div class="form-group">
                 <label>4桁の暗証番号 (PIN)</label>
                 <div class="pin-container">
-                    <input type="password" id="reg-pin" maxlength="4" placeholder="••••">
+                    <input type="password" id="reg-pin" maxlength="4" placeholder="••••" inputmode="numeric">
                     <button type="button" class="toggle-eye" onclick="togglePinVisibility('reg-pin', this)">👁</button>
                 </div>
             </div>
@@ -97,9 +97,9 @@
             <div><small>昨夕</small><select id="食事昨夕"><option>〇</option><option>／</option><option>✕</option></select></div>
         </div>
 
-        <div class="form-group"><label>昨夜就寝時間 (4桁)</label><input type="number" id="昨夜就寝時間" placeholder="2300"></div>
-        <div class="form-group"><label>本日起床時間 (4桁)</label><input type="number" id="本日起床時間" placeholder="0700"></div>
-        <div class="form-group"><label>体温 (下1桁まで)</label><input type="number" id="体温" step="0.1" placeholder="36.5"></div>
+        <div class="form-group"><label>昨夜就寝時間 (4桁)</label><input type="number" id="昨夜就寝時間" placeholder="2300" inputmode="numeric"></div>
+        <div class="form-group"><label>本日起床時間 (4桁)</label><input type="number" id="本日起床時間" placeholder="0700" inputmode="numeric"></div>
+        <div class="form-group"><label>体温 (下1桁まで)</label><input type="number" id="体温" step="0.1" placeholder="36.5" inputmode="decimal"></div>
         <div class="form-group"><label>特記事項</label><textarea id="特記事項" placeholder="特になし"></textarea></div>
 
         <button class="btn" onclick="goToConfirm()">確認画面へ</button>
@@ -160,7 +160,8 @@
             }
 
             statusEl.innerText = "登録中...";
-            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'add', name, pin }) });
+            const url = `${GAS_URL}?action=add&name=${encodeURIComponent(name)}&pin=${pin}&t=${new Date().getTime()}`;
+            const res = await fetch(url);
             const result = await res.json();
             
             if(result.status === 'exists_pin') {
@@ -245,10 +246,13 @@
         }
 
         async function submitData() {
-            await fetch(GAS_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'record', name: currentUser, data: formData }) 
-            });
+            let query = `${GAS_URL}?action=record&name=${encodeURIComponent(currentUser)}`;
+            for (let key in formData) {
+                query += `&${key}=${encodeURIComponent(formData[key])}`;
+            }
+            query += `&t=${new Date().getTime()}`;
+
+            await fetch(query);
             currentUser = "";
             changeView('view-auth');
             document.getElementById('login-status').innerText = "送信完了しました。";
