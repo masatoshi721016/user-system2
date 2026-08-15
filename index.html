@@ -4,27 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>体調管理チェック</title>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 12px; max-width: 480px; margin: 0 auto; background: #f0f2f5; color: #333; font-size: 15px; }
-        .card { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
-        h2 { text-align: center; font-size: 18px; margin-top: 0; color: #2c3e50; }
-        .form-group { margin-bottom: 14px; }
-        label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 14px; color: #555; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccd0d5; border-radius: 8px; box-sizing: border-box; font-size: 15px; background: #fff; }
-        textarea { height: 70px; resize: vertical; }
-        .btn { width: 100%; padding: 12px; background: #0066cc; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 8px; }
-        .btn:active { background: #004fb3; }
-        .btn-secondary { background: #65676b; }
-        .tab-group { display: flex; margin-bottom: 18px; border-radius: 8px; overflow: hidden; border: 1px solid #ccd0d5; }
-        .tab { flex: 1; padding: 10px; text-align: center; background: #f0f2f5; cursor: pointer; font-weight: bold; font-size: 14px; color: #65676b; }
-        .tab.active { background: #0066cc; color: white; }
+        body { font-family: 'M PLUS Rounded 1c', sans-serif; padding: 15px; max-width: 480px; margin: 0 auto; background: #f0f4f8; color: #333; font-size: 16px; }
+        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 15px; }
+        h2 { text-align: center; font-size: 20px; margin-top: 0; color: #2c3e50; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 15px; color: #444; }
+        input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #f8fafc; font-family: 'M PLUS Rounded 1c', sans-serif; }
+        input:focus, select:focus, textarea:focus { border-color: #3b82f6; outline: none; background: #fff; }
+        textarea { height: 80px; resize: vertical; }
+        .btn { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 10px; font-family: 'M PLUS Rounded 1c', sans-serif; }
+        .btn:active { background: #2563eb; }
+        .btn-secondary { background: #64748b; }
+        .tab-group { display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 2px solid #e2e8f0; }
+        .tab { flex: 1; padding: 12px; text-align: center; background: #f1f5f9; cursor: pointer; font-weight: bold; font-size: 15px; color: #64748b; }
+        .tab.active { background: #3b82f6; color: white; }
         .view { display: none; }
         .view.active { display: block; }
-        .row-inputs { display: flex; gap: 6px; }
+        .row-inputs { display: flex; gap: 8px; }
         .row-inputs > div { flex: 1; text-align: center; }
-        .row-inputs small { font-size: 11px; color: #666; display: block; margin-bottom: 2px; }
-        .confirm-box p { margin: 6px 0; border-bottom: 1px solid #eee; padding-bottom: 4px; font-size: 14px; }
-        .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; }
+        .row-inputs small { font-size: 12px; color: #64748b; display: block; margin-bottom: 4px; font-weight: bold; }
+        .confirm-box p { margin: 8px 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; font-size: 15px; }
+        .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        .status-text { text-align: center; font-weight: bold; color: #e11d48; margin-bottom: 10px; font-size: 14px; min-height: 20px; }
+        .pin-container { position: relative; display: flex; align-items: center; }
+        .pin-container input { padding-right: 45px; letter-spacing: 4px; }
+        .toggle-eye { position: absolute; right: 12px; background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b; }
     </style>
 </head>
 <body>
@@ -38,15 +44,28 @@
         
         <div id="form-login">
             <h2>ログイン</h2>
-            <div class="form-group"><label>名前</label><input type="text" id="login-name" placeholder="例: 山田太郎"></div>
-            <div class="form-group"><label>PINコード (4桁)</label><input type="password" id="login-pin" maxlength="4" placeholder="••••"></div>
+            <div class="status-text" id="login-status"></div>
+            <div class="form-group">
+                <label>4桁の暗証番号 (PIN)</label>
+                <div class="pin-container">
+                    <input type="password" id="login-pin" maxlength="4" placeholder="••••">
+                    <button type="button" class="toggle-eye" onclick="togglePinVisibility('login-pin', this)">👁</button>
+                </div>
+            </div>
             <button class="btn" onclick="login()">ログイン</button>
         </div>
 
         <div id="form-reg" style="display:none;">
             <h2>新規登録</h2>
-            <div class="form-group"><label>名前</label><input type="text" id="reg-name" placeholder="例: 山田太郎"></div>
-            <div class="form-group"><label>PINコード (4桁)</label><input type="password" id="reg-pin" maxlength="4" placeholder="••••"></div>
+            <div class="status-text" id="reg-status"></div>
+            <div class="form-group"><label>お名前</label><input type="text" id="reg-name" placeholder="例: 山田太郎"></div>
+            <div class="form-group">
+                <label>4桁の暗証番号 (PIN)</label>
+                <div class="pin-container">
+                    <input type="password" id="reg-pin" maxlength="4" placeholder="••••">
+                    <button type="button" class="toggle-eye" onclick="togglePinVisibility('reg-pin', this)">👁</button>
+                </div>
+            </div>
             <button class="btn" onclick="register()">登録</button>
         </div>
     </div>
@@ -54,8 +73,8 @@
     <!-- 2. 詳細入力画面 -->
     <div id="view-form" class="card view">
         <div class="user-header">
-            <span id="welcome-user" style="font-weight:bold; color:#0066cc;"></span>
-            <button onclick="logout()" style="padding:4px 8px; font-size:12px; background:#e4e6eb; border:none; border-radius:4px; cursor:pointer;">ログアウト</button>
+            <span id="welcome-user" style="font-weight:bold; color:#3b82f6; font-size:16px;"></span>
+            <button onclick="logout()" style="padding:6px 12px; font-size:13px; background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; font-family:'M PLUS Rounded 1c'; font-weight:bold; color:#64748b;">ログアウト</button>
         </div>
         <h2>体調管理チェック</h2>
 
@@ -90,16 +109,18 @@
     <div id="view-confirm" class="card view">
         <h2>入力内容の確認</h2>
         <div class="confirm-box" id="confirm-content"></div>
-        <button class="btn" onclick="submitData()">送信する</button>
+        <button class="btn" onclick="submitData()">送信して終了</button>
         <button class="btn btn-secondary" onclick="backToForm()">修正する</button>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
+        const GAS_URL = "ここにウェブアプリのURLを貼り付けてください";
         let currentUser = "";
         let formData = {};
 
         function switchTab(type) {
+            document.getElementById('login-status').innerText = "";
+            document.getElementById('reg-status').innerText = "";
             if(type==='login') {
                 document.getElementById('tab-login').classList.add('active');
                 document.getElementById('tab-reg').classList.remove('active');
@@ -113,47 +134,79 @@
             }
         }
 
+        function togglePinVisibility(id, btn) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                btn.style.color = "#3b82f6";
+            } else {
+                input.type = "password";
+                btn.style.color = "#64748b";
+            }
+        }
+
         async function register() {
             const name = document.getElementById('reg-name').value.trim();
             const pin = document.getElementById('reg-pin').value.trim();
-            if(!name || pin.length !== 4) return alert("名前と4桁のPINを入力してください");
+            const statusEl = document.getElementById('reg-status');
 
-            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'add', name, pin }) });
-            const result = await res.json();
-            
-            if(result.status === 'exists') {
-                alert("すでに登録されている名前です");
+            if(!name) {
+                statusEl.innerText = "お名前を入力してください";
+                return;
+            }
+            if(!/^\d{4}$/.test(pin)) {
+                statusEl.innerText = "PINは4桁の数字で入力してください";
                 return;
             }
 
-            alert("登録が完了しました。ログインしてください。");
+            statusEl.innerText = "登録中...";
+            const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'add', name, pin }) });
+            const result = await res.json();
+            
+            if(result.status === 'exists_pin') {
+                statusEl.innerText = "すでに使われているPINコードです";
+                return;
+            }
+            if(result.status === 'exists_name') {
+                statusEl.innerText = "すでに登録されているお名前です";
+                return;
+            }
+
             document.getElementById('reg-name').value = '';
             document.getElementById('reg-pin').value = '';
             switchTab('login');
+            document.getElementById('login-status').innerText = "登録が完了しました。ログインしてください。";
         }
 
         async function login() {
-            const name = document.getElementById('login-name').value.trim();
             const pin = document.getElementById('login-pin').value.trim();
-            if(!name || !pin) return alert("名前とPINを入力してください");
+            const statusEl = document.getElementById('login-status');
 
+            if(!/^\d{4}$/.test(pin)) {
+                statusEl.innerText = "4桁のPINを入力してください";
+                return;
+            }
+
+            statusEl.innerText = "確認中...";
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             const users = await res.json();
-            const user = users.find(u => u.name === name && u.pin === pin);
+            const user = users.find(u => u.pin === pin);
 
             if(user) {
-                currentUser = name;
-                document.getElementById('welcome-user').innerText = "ログイン中: " + currentUser;
+                currentUser = user.name;
+                document.getElementById('welcome-user').innerText = currentUser + "さん、こんにちは！";
+                document.getElementById('login-pin').value = '';
+                statusEl.innerText = "";
                 changeView('view-form');
             } else {
-                alert("名前またはPINが違います");
+                statusEl.innerText = "一致するPINコードが見つかりません";
             }
         }
 
         function logout() {
             currentUser = "";
-            document.getElementById('login-name').value = '';
             document.getElementById('login-pin').value = '';
+            document.getElementById('login-status').innerText = "";
             changeView('view-auth');
         }
 
@@ -174,7 +227,7 @@
             };
 
             const html = `
-                <p><b>名前:</b> ${currentUser}</p>
+                <p><b>お名前:</b> ${currentUser}</p>
                 <p><b>体調:</b> ${formData.体調}</p>
                 <p><b>服薬:</b> 今朝(${formData.服薬今朝}) 昼(${formData.服薬昨昼}) 夕(${formData.服薬昨夕}) 就寝前(${formData.服薬就寝前})</p>
                 <p><b>食事:</b> 今朝(${formData.食事今朝}) 昼(${formData.食事昨昼}) 夕(${formData.食事昨夕})</p>
@@ -196,8 +249,9 @@
                 method: 'POST', 
                 body: JSON.stringify({ action: 'record', name: currentUser, data: formData }) 
             });
-            alert("送信完了しました！");
-            location.reload();
+            currentUser = "";
+            changeView('view-auth');
+            document.getElementById('login-status').innerText = "送信完了しました。";
         }
 
         function changeView(viewId) {
