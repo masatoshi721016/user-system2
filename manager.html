@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>管理画面</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f4f6f8; font-size: 14px; max-width: 800px; margin: 0 auto; }
+        body { font-family: sans-serif; padding: 15px; background: #f4f6f8; font-size: 14px; max-width: 900px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
@@ -14,6 +14,7 @@
         .btn-success { background: #28a745; color: white; }
         .btn-danger { background: #dc3545; color: white; }
         .status { margin-bottom: 10px; font-weight: bold; color: #333; min-height: 20px; }
+        .record-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -22,7 +23,7 @@
         <div class="status" id="status-msg"></div>
         <div style="margin-bottom: 10px; display: flex; gap: 10px;">
             <button class="btn-primary" onclick="loadUsers()">手動更新</button>
-            <button class="btn-success" onclick="showDetails()">選択ユーザーの詳細</button>
+            <button class="btn-success" onclick="showDetails()">選択ユーザーの詳細（複数可）</button>
             <button class="btn-danger" onclick="deleteSelected()">選択項目を削除</button>
         </div>
         <table>
@@ -39,7 +40,7 @@
     </div>
 
     <div class="card" id="detail-card" style="display:none;">
-        <h3 id="detail-title">ユーザー詳細記録</h3>
+        <h3 id="detail-title">選択ユーザーの記録詳細</h3>
         <div id="detail-content"></div>
     </div>
 
@@ -68,31 +69,42 @@
 
         async function showDetails() {
             const checked = document.querySelectorAll('.row-checkbox:checked');
-            if (checked.length !== 1) {
-                document.getElementById('status-msg').innerText = "詳細を見るユーザーを1名だけ選択してください";
+            if (checked.length === 0) {
+                document.getElementById('status-msg').innerText = "詳細を見るユーザーを1名以上選択してください";
                 return;
             }
-            const name = checked[0].getAttribute('data-name');
-            document.getElementById('status-msg').innerText = `${name}さんの詳細データを読み込み中...`;
             
-            const res = await fetch(`${GAS_URL}?action=getRecords&name=${encodeURIComponent(name)}&t=${new Date().getTime()}`);
-            const record = await res.json();
+            const names = Array.from(checked).map(cb => cb.getAttribute('data-name')).join(',');
+            document.getElementById('status-msg').innerText = "選択されたユーザーの詳細データを読み込み中...";
+            
+            const res = await fetch(`${GAS_URL}?action=getMultipleRecords&names=${encodeURIComponent(names)}&t=${new Date().getTime()}`);
+            const records = await res.json();
             
             const detailCard = document.getElementById('detail-card');
             const detailContent = document.getElementById('detail-content');
             
-            if (!record) {
-                detailContent.innerHTML = "<p>まだ記録データがありません。</p>";
+            if (!records || records.length === 0) {
+                detailContent.innerHTML = "<p>選択されたユーザーの記録データがまだありません。</p>";
             } else {
-                let html = "<table>";
-                for (let key in record) {
-                    html += `<tr><th style="width:30%;">${key}</th><td>${record[key]}</td></tr>`;
-                }
-                html += "</table>";
+                let html = "";
+                records.forEach(rec => {
+                    html += `<div class="record-box"><table>`;
+                    // 名前・日付・更新日時を先に表示
+                    html += `<tr><th style="width:30%; background:#e2e8f0;">名前</th><td><b>${rec["名前"]}</b></td></tr>`;
+                    html += `<tr><th style="background:#e2e8f0;">記録日</th><td><b>${rec["日付"]}</b></td></tr>`;
+                    html += `<tr><th style="background:#e2e8f0;">登録日時(更新)</th><td>${rec["更新日時"]}</td></tr>`;
+                    
+                    for (let key in rec) {
+                        if (key !== "名前" && key !== "日付" && key !== "更新日時") {
+                            html += `<tr><th>${key}</th><td>${rec[key]}</td></tr>`;
+                        }
+                    }
+                    html += `</table></div>`;
+                });
                 detailContent.innerHTML = html;
             }
             detailCard.style.display = "block";
-            document.getElementById('status-msg').innerText = `${name}さんの詳細を表示しました`;
+            document.getElementById('status-msg').innerText = "詳細を表示しました";
         }
 
         async function deleteSelected() {
