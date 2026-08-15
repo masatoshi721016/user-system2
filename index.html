@@ -1,242 +1,45 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ログイン・登録</title>
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700&display=swap" rel="stylesheet">
-    <style>
-        body { 
-            font-family: 'M PLUS Rounded 1c', sans-serif; 
-            padding: 20px; 
-            max-width: 500px; 
-            margin: 0 auto; 
-            background: #f9f9f9; 
-            font-size: 24px; 
-        }
-        h2 { font-size: 32px; text-align: center; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .tab { display: flex; margin-bottom: 25px; }
-        .tab button { flex: 1; padding: 18px; border: none; background: #eee; cursor: pointer; font-weight: bold; font-size: 20px; border-radius: 10px; font-family: inherit; }
-        .tab button.active { background: #007BFF; color: white; }
-        .form-group { margin-bottom: 25px; }
-        label { display: block; margin-bottom: 10px; font-weight: bold; font-size: 20px; }
-        input, select { width: 100%; padding: 18px; border: 2px solid #ccc; border-radius: 10px; font-size: 24px; box-sizing: border-box; font-family: inherit; background: white; }
-        .pin-container { position: relative; display: flex; align-items: center; }
-        .pin-container input { padding-right: 50px; }
-        .toggle-btn { position: absolute; right: 15px; background: none; border: none; font-size: 26px; cursor: pointer; }
-        .submit-btn { width: 100%; padding: 20px; background: #28a745; color: white; border: none; border-radius: 10px; font-size: 24px; font-weight: bold; cursor: pointer; font-family: inherit; }
-        .submit-btn:hover { background: #218838; }
-        .view { display: none; }
-        .view.active { display: block; }
-        .welcome-msg { font-size: 28px; color: #007BFF; text-align: center; margin-bottom: 20px; font-weight: bold; }
-        .status-msg { text-align: center; font-size: 20px; color: #666; margin-bottom: 15px; min-height: 30px; font-weight: bold; }
-    </style>
-</head>
 <body>
-    <div class="card">
-        <!-- タブボタン -->
-        <div class="tab" id="tabs">
-            <button id="btn-login" class="active" onclick="switchTab('login')">ログイン</button>
-            <button id="btn-register" onclick="switchTab('register')">新規登録</button>
-        </div>
-
-        <!-- ログイン画面 -->
-        <div id="view-login" class="view active">
-            <h2>ログイン</h2>
-            <div id="login-status" class="status-msg"></div>
-            <div class="form-group">
-                <label>暗証番号（4けた）</label>
-                <div class="pin-container">
-                    <!-- autocomplete="off" を追加して自動入力を防止 -->
-                    <input type="password" id="login-pin" placeholder="例：0123" maxlength="4" inputmode="numeric" autocomplete="off">
-                    <button type="button" class="toggle-btn" onclick="togglePin('login-pin', this)">👁️</button>
-                </div>
-            </div>
-            <button class="submit-btn" onclick="handleLogin()">ログイン</button>
-        </div>
-
-        <!-- 新規登録画面 -->
-        <div id="view-register" class="view">
-            <h2>新規登録</h2>
-            <div id="reg-status" class="status-msg"></div>
-            <div class="form-group">
-                <label>お名前</label>
-                <input type="text" id="reg-name" placeholder="山田 太郎" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label>暗証番号（4けた）</label>
-                <div class="pin-container">
-                    <input type="password" id="reg-pin" placeholder="例：0123" maxlength="4" inputmode="numeric" autocomplete="off">
-                    <button type="button" class="toggle-btn" onclick="togglePin('reg-pin', this)">👁️</button>
-                </div>
-            </div>
-            <button class="submit-btn" onclick="handleRegister()">登録する</button>
-        </div>
-
-        <!-- ログイン後の入力画面（選択・リスト・時間指定） -->
-        <div id="view-input" class="view">
-            <div id="welcome" class="welcome-msg"></div>
-            <div id="send-status" class="status-msg"></div>
-            
-            <div class="form-group">
-                <label>項目を選択</label>
-                <select id="input-item">
-                    <option value="出勤">出勤</option>
-                    <option value="退勤">退勤</option>
-                    <option value="休憩入り">休憩入り</option>
-                    <option value="休憩戻り">休憩戻り</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>時間指定</label>
-                <input type="time" id="input-time">
-            </div>
-
-            <button class="submit-btn" style="background:#007BFF;" onclick="handleSend()">送信して終了</button>
-        </div>
-    </div>
-
+    <h2>体調管理チェック</h2>
+    <form id="checkForm">
+        名前: <input type="text" id="name" required><br>
+        体調: <select id="体調"><option>〇</option><option>△</option><option>✕</option></select><br>
+        服薬: 今朝<select id="服薬今朝"><option>〇</option><option>／</option><option>✕</option></select>
+             昼<select id="服薬昨昼"><option>〇</option><option>／</option><option>✕</option></select>
+             夕<select id="服薬昨夕"><option>〇</option><option>／</option><option>✕</option></select>
+             就寝前<select id="服薬就寝前"><option>〇</option><option>／</option><option>✕</option></select><br>
+        食事: 今朝<select id="食事今朝"><option>〇</option><option>／</option><option>✕</option></select>
+             昼<select id="食事昨昼"><option>〇</option><option>／</option><option>✕</option></select>
+             夕<select id="食事昨夕"><option>〇</option><option>／</option><option>✕</option></select><br>
+        就寝時間(HHmm): <input type="number" id="昨夜就寝時間" placeholder="2300"><br>
+        起床時間(HHmm): <input type="number" id="本日起床時間" placeholder="0700"><br>
+        体温: <input type="number" id="体温" step="0.1" placeholder="36.5"><br>
+        特記事項: <textarea id="特記事項"></textarea><br>
+        <button type="button" onclick="submitData()">送信</button>
+    </form>
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
-        let currentUserName = "";
-
-        function switchTab(target) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('btn-login').classList.remove('active');
-            document.getElementById('btn-register').classList.remove('active');
-            document.getElementById('login-status').innerText = "";
-            document.getElementById('reg-status').innerText = "";
-
-            // 画面切り替え時にすべての入力欄を確実に空にする
-            document.getElementById('login-pin').value = "";
-            document.getElementById('reg-name').value = "";
-            document.getElementById('reg-pin').value = "";
-
-            if (target === 'login') {
-                document.getElementById('view-login').classList.add('active');
-                document.getElementById('btn-login').classList.add('active');
-            } else if (target === 'register') {
-                document.getElementById('view-register').classList.add('active');
-                document.getElementById('btn-register').classList.add('active');
-            }
-        }
-
-        function togglePin(id, btn) {
-            const input = document.getElementById(id);
-            if (input.type === "password") {
-                input.type = "text";
-                btn.textContent = "🙈";
-            } else {
-                input.type = "password";
-                btn.textContent = "👁️";
-            }
-        }
-
-        async function handleLogin() {
-            const pin = document.getElementById('login-pin').value.trim();
-            const statusEl = document.getElementById('login-status');
-
-            if (!/^\d{4}$/.test(pin)) {
-                statusEl.innerText = "4桁の数字を入力してください";
-                return;
-            }
-
-            statusEl.innerText = "確認中…";
-
-            try {
-                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
-                const data = await res.json();
-                const user = data.find(u => String(u.pin) === pin);
-
-                if (user) {
-                    currentUserName = user.name;
-                    document.getElementById('welcome').innerText = currentUserName + " さん、こんにちは！";
-                    document.getElementById('tabs').style.display = 'none';
-                    document.getElementById('login-pin').value = '';
-                    
-                    const now = new Date();
-                    const hours = String(now.getHours()).padStart(2, '0');
-                    const minutes = String(now.getMinutes()).padStart(2, '0');
-                    document.getElementById('input-time').value = `${hours}:${minutes}`;
-
-                    statusEl.innerText = "";
-                    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                    document.getElementById('view-input').classList.add('active');
-                } else {
-                    statusEl.innerText = "暗証番号が一致しません";
+        const URL = "ここにGASのウェブアプリURL";
+        async function submitData() {
+            const data = {
+                name: document.getElementById('name').value,
+                data: {
+                    体調: document.getElementById('体調').value,
+                    服薬今朝: document.getElementById('服薬今朝').value,
+                    服薬昨昼: document.getElementById('服薬昨昼').value,
+                    服薬昨夕: document.getElementById('服薬昨夕').value,
+                    服薬就寝前: document.getElementById('服薬就寝前').value,
+                    食事今朝: document.getElementById('食事今朝').value,
+                    食事昨昼: document.getElementById('食事昨昼').value,
+                    食事昨夕: document.getElementById('食事昨夕').value,
+                    昨夜就寝時間: document.getElementById('昨夜就寝時間').value,
+                    本日起床時間: document.getElementById('本日起床時間').value,
+                    体温: document.getElementById('体温').value,
+                    特記事項: document.getElementById('特記事項').value
                 }
-            } catch (e) {
-                statusEl.innerText = "通信エラーが発生しました";
-            }
-        }
-
-        async function handleRegister() {
-            const name = document.getElementById('reg-name').value.trim();
-            const pin = document.getElementById('reg-pin').value.trim();
-            const statusEl = document.getElementById('reg-status');
-
-            if (!name) {
-                statusEl.innerText = "お名前を入力してください";
-                return;
-            }
-            if (!/^\d{4}$/.test(pin)) {
-                statusEl.innerText = "4桁の数字を入力してください";
-                return;
-            }
-
-            statusEl.innerText = "登録中…";
-
-            try {
-                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
-                const data = await res.json();
-                if (data.some(u => String(u.pin) === pin)) {
-                    statusEl.innerText = "この暗証番号は既に登録されています";
-                    return;
-                }
-
-                await fetch(GAS_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ action: 'add', name: name, pin: pin }) 
-                });
-
-                // 登録成功後、入力欄を完全にクリアしてログイン画面へ
-                statusEl.innerText = "";
-                switchTab('login');
-            } catch (e) {
-                statusEl.innerText = "エラーが発生しました";
-            }
-        }
-
-        async function handleSend() {
-            const item = document.getElementById('input-item').value;
-            const time = document.getElementById('input-time').value;
-            const statusEl = document.getElementById('send-status');
-
-            if (!time) {
-                statusEl.innerText = "時間を指定してください";
-                return;
-            }
-
-            statusEl.innerText = "送信中…";
-
-            try {
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({ action: 'record', name: currentUserName, item: item, time: time })
-                });
-
-                setTimeout(() => {
-                    statusEl.innerText = "";
-                    document.getElementById('tabs').style.display = 'flex';
-                    switchTab('login');
-                }, 500);
-            } catch (e) {
-                statusEl.innerText = "送信に失敗しました";
-            }
+            };
+            await fetch(URL, { method: 'POST', body: JSON.stringify(data) });
+            alert("送信しました");
         }
     </script>
 </body>
