@@ -1,45 +1,191 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>体調管理チェック</title>
+    <style>
+        body { font-family: sans-serif; padding: 15px; max-width: 500px; margin: 0 auto; background: #f4f6f8; font-size: 16px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { text-align: center; font-size: 20px; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        textarea { height: 80px; resize: vertical; }
+        .btn { width: 100%; padding: 12px; background: #007BFF; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn:hover { background: #0056b3; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; }
+        .tab-group { display: flex; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 10px; text-align: center; background: #e2e6ea; cursor: pointer; font-weight: bold; }
+        .tab.active { background: #007BFF; color: white; }
+        .tab:first-child { border-radius: 6px 0 0 6px; }
+        .tab:last-child { border-radius: 0 6px 6px 0; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .row-inputs { display: flex; gap: 5px; }
+        .row-inputs select { flex: 1; }
+        .confirm-box p { margin: 8px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    </style>
+</head>
 <body>
-    <h2>体調管理チェック</h2>
-    <form id="checkForm">
-        名前: <input type="text" id="name" required><br>
-        体調: <select id="体調"><option>〇</option><option>△</option><option>✕</option></select><br>
-        服薬: 今朝<select id="服薬今朝"><option>〇</option><option>／</option><option>✕</option></select>
-             昼<select id="服薬昨昼"><option>〇</option><option>／</option><option>✕</option></select>
-             夕<select id="服薬昨夕"><option>〇</option><option>／</option><option>✕</option></select>
-             就寝前<select id="服薬就寝前"><option>〇</option><option>／</option><option>✕</option></select><br>
-        食事: 今朝<select id="食事今朝"><option>〇</option><option>／</option><option>✕</option></select>
-             昼<select id="食事昨昼"><option>〇</option><option>／</option><option>✕</option></select>
-             夕<select id="食事昨夕"><option>〇</option><option>／</option><option>✕</option></select><br>
-        就寝時間(HHmm): <input type="number" id="昨夜就寝時間" placeholder="2300"><br>
-        起床時間(HHmm): <input type="number" id="本日起床時間" placeholder="0700"><br>
-        体温: <input type="number" id="体温" step="0.1" placeholder="36.5"><br>
-        特記事項: <textarea id="特記事項"></textarea><br>
-        <button type="button" onclick="submitData()">送信</button>
-    </form>
+
+    <!-- 1. ログイン / 新規登録画面 -->
+    <div id="view-auth" class="card view active">
+        <div class="tab-group">
+            <div id="tab-login" class="tab active" onclick="switchTab('login')">ログイン</div>
+            <div id="tab-reg" class="tab" onclick="switchTab('reg')">新規登録</div>
+        </div>
+        
+        <div id="form-login">
+            <h2>ログイン</h2>
+            <div class="form-group"><label>名前</label><input type="text" id="login-name"></div>
+            <div class="form-group"><label>PINコード (4桁)</label><input type="password" id="login-pin" maxlength="4"></div>
+            <button class="btn" onclick="login()">ログイン</button>
+        </div>
+
+        <div id="form-reg" style="display:none;">
+            <h2>新規登録</h2>
+            <div class="form-group"><label>名前</label><input type="text" id="reg-name"></div>
+            <div class="form-group"><label>PINコード (4桁)</label><input type="password" id="reg-pin" maxlength="4"></div>
+            <button class="btn" onclick="register()">登録して次へ</button>
+        </div>
+    </div>
+
+    <!-- 2. 詳細入力画面 -->
+    <div id="view-form" class="card view">
+        <h2>体調管理チェック入力</h2>
+        <p id="welcome-user" style="text-align:center; font-weight:bold; color:#007BFF;"></p>
+
+        <div class="form-group"><label>体調</label>
+            <select id="体調"><option>〇</option><option>△</option><option>✕</option></select>
+        </div>
+
+        <label>服薬状況</label>
+        <div class="form-group row-inputs">
+            <div><small>今朝</small><select id="服薬今朝"><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>昨昼</small><select id="服薬昨昼"><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>昨夕</small><select id="服薬昨夕"><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>就寝前</small><select id="服薬就寝前"><option>〇</option><option>／</option><option>✕</option></select></div>
+        </div>
+
+        <label>食事状況</label>
+        <div class="form-group row-inputs">
+            <div><small>今朝</small><select id="食事今朝"><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>昨昼</small><select id="食事昨昼"><option>〇</option><option>／</option><option>✕</option></select></div>
+            <div><small>昨夕</small><select id="食事昨夕"><option>〇</option><option>／</option><option>✕</option></select></div>
+        </div>
+
+        <div class="form-group"><label>昨夜就寝時間 (例: 2300)</label><input type="number" id="昨夜就寝時間" placeholder="2300"></div>
+        <div class="form-group"><label>本日起床時間 (例: 0700)</label><input type="number" id="本日起床時間" placeholder="0700"></div>
+        <div class="form-group"><label>体温 (例: 36.5)</label><input type="number" id="体温" step="0.1" placeholder="36.5"></div>
+        <div class="form-group"><label>特記事項</label><textarea id="特記事項" placeholder="特になし"></textarea></div>
+
+        <button class="btn" onclick="goToConfirm()">確認画面へ</button>
+    </div>
+
+    <!-- 3. 確認画面 -->
+    <div id="view-confirm" class="card view">
+        <h2>入力内容の確認</h2>
+        <div class="confirm-box" id="confirm-content"></div>
+        <button class="btn" onclick="submitData()">送信する</button>
+        <button class="btn btn-secondary" onclick="backToForm()">修正する</button>
+    </div>
+
     <script>
-        const URL = "ここにGASのウェブアプリURL";
-        async function submitData() {
-            const data = {
-                name: document.getElementById('name').value,
-                data: {
-                    体調: document.getElementById('体調').value,
-                    服薬今朝: document.getElementById('服薬今朝').value,
-                    服薬昨昼: document.getElementById('服薬昨昼').value,
-                    服薬昨夕: document.getElementById('服薬昨夕').value,
-                    服薬就寝前: document.getElementById('服薬就寝前').value,
-                    食事今朝: document.getElementById('食事今朝').value,
-                    食事昨昼: document.getElementById('食事昨昼').value,
-                    食事昨夕: document.getElementById('食事昨夕').value,
-                    昨夜就寝時間: document.getElementById('昨夜就寝時間').value,
-                    本日起床時間: document.getElementById('本日起床時間').value,
-                    体温: document.getElementById('体温').value,
-                    特記事項: document.getElementById('特記事項').value
-                }
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
+        let currentUser = "";
+        let formData = {};
+
+        function switchTab(type) {
+            if(type==='login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-reg').classList.remove('active');
+                document.getElementById('form-login').style.display = 'block';
+                document.getElementById('form-reg').style.display = 'none';
+            } else {
+                document.getElementById('tab-reg').classList.add('active');
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('form-login').style.display = 'none';
+                document.getElementById('form-reg').style.display = 'block';
+            }
+        }
+
+        async function register() {
+            const name = document.getElementById('reg-name').value.trim();
+            const pin = document.getElementById('reg-pin').value.trim();
+            if(!name || pin.length !== 4) return alert("名前と4桁のPINを入力してください");
+
+            await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'add', name, pin }) });
+            currentUser = name;
+            document.getElementById('welcome-user').innerText = "ログイン中: " + currentUser;
+            changeView('view-form');
+        }
+
+        async function login() {
+            const name = document.getElementById('login-name').value.trim();
+            const pin = document.getElementById('login-pin').value.trim();
+            if(!name || !pin) return alert("名前とPINを入力してください");
+
+            const res = await fetch(GAS_URL);
+            const users = await res.json();
+            const user = users.find(u => u.name === name && u.pin === pin);
+
+            if(user) {
+                currentUser = name;
+                document.getElementById('welcome-user').innerText = "ログイン中: " + currentUser;
+                changeView('view-form');
+            } else {
+                alert("名前またはPINが違います");
+            }
+        }
+
+        function goToConfirm() {
+            formData = {
+                体調: document.getElementById('体調').value,
+                服薬今朝: document.getElementById('服薬今朝').value,
+                服薬昨昼: document.getElementById('服薬昨昼').value,
+                服薬昨夕: document.getElementById('服薬昨夕').value,
+                服薬就寝前: document.getElementById('服薬就寝前').value,
+                食事今朝: document.getElementById('食事今朝').value,
+                食事昨昼: document.getElementById('食事昨昼').value,
+                食事昨夕: document.getElementById('食事昨夕').value,
+                昨夜就寝時間: document.getElementById('昨夜就寝時間').value,
+                本日起床時間: document.getElementById('本日起床時間').value,
+                体温: document.getElementById('体温').value,
+                特記事項: document.getElementById('特記事項').value
             };
-            await fetch(URL, { method: 'POST', body: JSON.stringify(data) });
-            alert("送信しました");
+
+            const html = `
+                <p><b>名前:</b> ${currentUser}</p>
+                <p><b>体調:</b> ${formData.体調}</p>
+                <p><b>服薬:</b> 今朝(${formData.服薬今朝}) 昼(${formData.服薬昨昼}) 夕(${formData.服薬昨夕}) 就寝前(${formData.服薬就寝前})</p>
+                <p><b>食事:</b> 今朝(${formData.食事今朝}) 昼(${formData.食事昨昼}) 夕(${formData.食事昨夕})</p>
+                <p><b>就寝時間:</b> ${formData.昨夜就寝時間 || '-'}</p>
+                <p><b>起床時間:</b> ${formData.本日起床時間 || '-'}</p>
+                <p><b>体温:</b> ${formData.体温 ? formData.体温 + '℃' : '-'}</p>
+                <p><b>特記事項:</b> ${formData.特記事項 || 'なし'}</p>
+            `;
+            document.getElementById('confirm-content').innerHTML = html;
+            changeView('view-confirm');
+        }
+
+        function backToForm() {
+            changeView('view-form');
+        }
+
+        async function submitData() {
+            await fetch(GAS_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: 'record', name: currentUser, data: formData }) 
+            });
+            alert("送信完了しました！");
+            location.reload(); // ログイン画面に戻る
+        }
+
+        function changeView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
         }
     </script>
 </body>
