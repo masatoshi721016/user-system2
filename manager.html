@@ -1,30 +1,88 @@
 <!DOCTYPE html>
 <html>
-<head><style>body{padding:10px;} table{border-collapse:collapse; width:100%;} th,td{border:1px solid #ccc; padding:5px; font-size:12px; white-space:nowrap;}</style></head>
+<head>
+    <meta charset="UTF-8">
+    <title>管理画面</title>
+    <style>
+        body { font-family: sans-serif; padding: 15px; background: #f4f6f8; font-size: 14px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #f1f3f5; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-primary { background: #007BFF; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .status { margin-bottom: 10px; font-weight: bold; color: #28a745; min-height: 20px; }
+    </style>
+</head>
 <body>
-    <h2>管理一覧</h2>
-    <div style="overflow-x:auto;">
-        <table id="recordTable">
+    <div class="card">
+        <h2>登録者一覧管理</h2>
+        <div class="status" id="status-msg"></div>
+        <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+            <button class="btn-primary" onclick="loadUsers()">手動更新</button>
+            <button class="btn-danger" onclick="deleteSelected()">選択した項目を削除</button>
+        </div>
+        <table>
             <thead>
-                <tr><th>名前</th><th>体調</th><th>服薬(朝昼夕寝)</th><th>食事(朝昼夕)</th><th>就寝</th><th>起床</th><th>体温</th><th>特記事項</th></tr>
+                <tr>
+                    <th><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)"></th>
+                    <th>名前</th>
+                    <th>PIN</th>
+                    <th>登録日時</th>
+                </tr>
             </thead>
-            <tbody></tbody>
+            <tbody id="user-tbody"></tbody>
         </table>
     </div>
+
     <script>
-        const URL = "ここにGASのウェブアプリURL";
-        async function load() {
-            const res = await fetch(URL + "?action=getRecords");
-            const data = await res.json();
-            const tbody = document.querySelector('#recordTable tbody');
-            data.forEach(r => {
-                tbody.innerHTML += `<tr><td>${r.name}</td><td>${r.体調}</td>
-                <td>${r.服薬今朝}/${r.服薬昨昼}/${r.服薬昨夕}/${r.服薬就寝前}</td>
-                <td>${r.食事今朝}/${r.食事昨昼}/${r.食事昨夕}</td>
-                <td>${r.昨夜就寝時間}</td><td>${r.本日起床時間}</td><td>${r.体温}</td><td>${r.特記事項}</td></tr>`;
+        const GAS_URL = "ここにウェブアプリのURLを貼り付けてください";
+
+        async function loadUsers() {
+            document.getElementById('status-msg').innerText = "読み込み中...";
+            const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
+            const users = await res.json();
+            const tbody = document.getElementById('user-tbody');
+            tbody.innerHTML = '';
+
+            users.forEach(u => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><input type="checkbox" class="row-checkbox" value="${u.row}"></td>
+                        <td>${u.name}</td>
+                        <td>${u.pin}</td>
+                        <td>${u.date}</td>
+                    </tr>
+                `;
             });
+            document.getElementById('status-msg').innerText = "最新データを読み込みました";
         }
-        load();
+
+        function toggleSelectAll(master) {
+            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = master.checked);
+        }
+
+        async function deleteSelected() {
+            const checked = document.querySelectorAll('.row-checkbox:checked');
+            if (checked.length === 0) {
+                document.getElementById('status-msg').innerText = "削除する項目が選択されていません";
+                return;
+            }
+
+            const rows = Array.from(checked).map(cb => parseInt(cb.value));
+            document.getElementById('status-msg').innerText = "削除処理中...";
+
+            await fetch(GAS_URL, { 
+                method: 'POST', 
+                body: JSON.stringify({ action: 'delete', rows: rows }) 
+            });
+
+            document.getElementById('status-msg').innerText = "選択項目を削除しました";
+            loadUsers();
+        }
+
+        loadUsers();
     </script>
 </body>
 </html>
