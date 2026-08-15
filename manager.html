@@ -1,85 +1,30 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>管理画面</title>
-    <style>
-        body { font-family: sans-serif; padding: 10px; background: #f4f6f8; font-size: 14px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background: #eee; }
-        .view { display: none; }
-        .view.active { display: block; }
-        button { padding: 8px 15px; cursor: pointer; }
-    </style>
-</head>
+<head><style>body{padding:10px;} table{border-collapse:collapse; width:100%;} th,td{border:1px solid #ccc; padding:5px; font-size:12px; white-space:nowrap;}</style></head>
 <body>
-    <div id="view-list" class="card view active">
-        <h2>登録者一覧</h2>
-        <button onclick="loadUsers()">更新</button>
-        <button onclick="goToUserInfo()">詳細表示</button>
-        <button onclick="deleteSelected()" style="color:red;">削除</button>
-        <table id="user-table">
-            <thead><tr><th>選択</th><th>名前</th><th>PIN</th><th>登録日時</th></tr></thead>
+    <h2>管理一覧</h2>
+    <div style="overflow-x:auto;">
+        <table id="recordTable">
+            <thead>
+                <tr><th>名前</th><th>体調</th><th>服薬(朝昼夕寝)</th><th>食事(朝昼夕)</th><th>就寝</th><th>起床</th><th>体温</th><th>特記事項</th></tr>
+            </thead>
             <tbody></tbody>
         </table>
     </div>
-
-    <div id="view-info" class="card view">
-        <button onclick="showListView()">← 一覧へ戻る</button>
-        <h2>ユーザー詳細</h2>
-        <table id="record-table">
-            <thead><tr><th>名前</th><th>出勤</th><th>休憩入り</th><th>休憩戻り</th><th>退勤</th></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwkqWE0t52f1laN02b-TrBAL0ZGR6xQ8ap6Q6ysARtdLKuQkVCrxAfMqmgDrqWVboFy/exec";
-
-        async function loadUsers() {
-            const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
+        const URL = "ここにGASのウェブアプリURL";
+        async function load() {
+            const res = await fetch(URL + "?action=getRecords");
             const data = await res.json();
-            const tbody = document.querySelector('#user-table tbody');
-            tbody.innerHTML = '';
-            data.forEach(user => {
-                tbody.innerHTML += `<tr><td><input type="checkbox" class="row-checkbox" value="${user.row}" data-name="${user.name}"></td><td>${user.name}</td><td>${user.pin}</td><td>${user.date}</td></tr>`;
+            const tbody = document.querySelector('#recordTable tbody');
+            data.forEach(r => {
+                tbody.innerHTML += `<tr><td>${r.name}</td><td>${r.体調}</td>
+                <td>${r.服薬今朝}/${r.服薬昨昼}/${r.服薬昨夕}/${r.服薬就寝前}</td>
+                <td>${r.食事今朝}/${r.食事昨昼}/${r.食事昨夕}</td>
+                <td>${r.昨夜就寝時間}</td><td>${r.本日起床時間}</td><td>${r.体温}</td><td>${r.特記事項}</td></tr>`;
             });
         }
-
-        async function goToUserInfo() {
-            const checked = document.querySelectorAll('.row-checkbox:checked');
-            if (checked.length === 0) return alert("ユーザーを選択してください");
-            const names = Array.from(checked).map(cb => cb.getAttribute('data-name'));
-            
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-info').classList.add('active');
-            
-            const res = await fetch(GAS_URL + '?names=' + encodeURIComponent(names.join(',')) + '&t=' + new Date().getTime());
-            const data = await res.json();
-            const tbody = document.querySelector('#record-table tbody');
-            tbody.innerHTML = '';
-
-            (data.records || []).forEach(r => {
-                tbody.innerHTML += `<tr><td><b>${r.name}</b></td><td>${r.in}</td><td>${r.bIn}</td><td>${r.bOut}</td><td>${r.out}</td></tr>`;
-            });
-        }
-
-        function showListView() {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-list').classList.add('active');
-        }
-
-        async function deleteSelected() {
-            const checked = document.querySelectorAll('.row-checkbox:checked');
-            if (checked.length === 0) return;
-            const rows = Array.from(checked).map(cb => parseInt(cb.value));
-            await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete', rows: rows }) });
-            loadUsers();
-        }
-
-        loadUsers();
+        load();
     </script>
 </body>
 </html>
