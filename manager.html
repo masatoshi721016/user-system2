@@ -170,6 +170,7 @@
         }
 
         let globalUserRecordsMap = {};
+        let globalOriginalRecordsMap = {}; // 最初に取得したときの元の順番を保持用
         const sortStates = {};
 
         async function showDetailsPage() {
@@ -184,6 +185,9 @@
             
             const res = await fetch(`${GAS_URL}?action=getMultipleRecords&names=${encodeURIComponent(names)}&t=${new Date().getTime()}`);
             globalUserRecordsMap = await res.json();
+            
+            // 元の順番（初期状態）を保持しておくためのディープコピー
+            globalOriginalRecordsMap = JSON.parse(JSON.stringify(globalUserRecordsMap));
             
             // 初回表示時は全ユーザーのデータを「日付」の昇順（古い日付が上）にデフォルトソート
             for (let name in globalUserRecordsMap) {
@@ -282,41 +286,57 @@
             if (!records) return;
 
             const stateKey = name + "_" + key;
-            const currentDir = sortStates[stateKey] || 'desc';
-            const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
+            const currentDir = sortStates[stateKey] || 'none';
             
+            let nextDir;
+            if (currentDir === 'none') {
+                nextDir = 'asc';
+            } else if (currentDir === 'asc') {
+                nextDir = 'desc';
+            } else {
+                nextDir = 'none'; // 3回目のクリックで初期の順番に戻す
+            }
+            
+            // 他の列のソート状態を一旦すべてクリア
             const columns = ["日付", "体調", "服薬今朝", "服薬昨昼", "服薬昨夕", "服薬就寝前", "食事今朝", "食事昨昼", "食事昨夕", "昨夜就寝時間", "本日起床時間", "体温", "特記事項", "更新日時"];
             columns.forEach(c => { delete sortStates[name + "_" + c]; });
-            sortStates[stateKey] = nextDir;
 
-            const healthOrder = { "〇": 1, "△": 2, "✕": 3, "-": 4 };
-            const medOrder = { "〇": 1, "／": 2, "✕": 3, "-": 4 };
+            if (nextDir === 'none') {
+                // 最初に取得したときの元の順番に復元
+                globalUserRecordsMap[name] = JSON.parse(JSON.stringify(globalOriginalRecordsMap[name]));
+                delete sortStates[stateKey];
+            } else {
+                sortStates[stateKey] = nextDir;
 
-            records.sort((a, b) => {
-                let valA = a[key === "日付" ? ("記録日" in a ? "記録日" : "日付") : key] || "";
-                let valB = b[key === "日付" ? ("記録日" in b ? "記録日" : "日付") : key] || "";
+                const healthOrder = { "〇": 1, "△": 2, "✕": 3, "-": 4 };
+                const medOrder = { "〇": 1, "／": 2, "✕": 3, "-": 4 };
 
-                if (key === "体調") {
-                    valA = healthOrder[valA.trim()] || 99;
-                    valB = healthOrder[valB.trim()] || 99;
-                } else if (key.includes("服薬") || key.includes("食事")) {
-                    valA = medOrder[valA.trim()] || 99;
-                    valB = medOrder[valB.trim()] || 99;
-                } else if (key === "日付" || key === "更新日時") {
-                    valA = new Date(valA).getTime() || 0;
-                    valB = new Date(valB).getTime() || 0;
-                } else if (key === "体温") {
-                    valA = parseFloat(valA) || 0;
-                    valB = parseFloat(valB) || 0;
-                } else {
-                    valA = String(valA);
-                    valB = String(valB);
-                }
+                records.sort((a, b) => {
+                    let valA = a[key === "日付" ? ("記録日" in a ? "記録日" : "日付") : key] || "";
+                    let valB = b[key === "日付" ? ("記録日" in b ? "記録日" : "日付") : key] || "";
 
-                if (valA < valB) return nextDir === 'asc' ? -1 : 1;
-                if (valA > valB) return nextDir === 'asc' ? 1 : -1;
-                return 0;
-            });
+                    if (key === "体調") {
+                        valA = healthOrder[valA.trim()] || 99;
+                        valB = healthOrder[valB.trim()] || 99;
+                    } else if (key.includes("服薬") || key.includes("食事")) {
+                        valA = medOrder[valA.trim()] || 99;
+                        valB = medOrder[valB.trim()] || 99;
+                    } else if (key === "日付" || key === "更新日時") {
+                        valA = new Date(valA).getTime() || 0;
+                        valB = new Date(valB).getTime() || 0;
+                    } else if (key === "体温") {
+                        valA = parseFloat(valA) || 0;
+                        valB = parseFloat(valB) || 0;
+                    } else {
+                        valA = String(valA);
+                        valB = String(valB);
+                    }
+
+                    if (valA < valB) return nextDir === 'asc' ? -1 : 1;
+                    if (valA > valB) return nextDir === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
 
             renderDetailTables();
         }
