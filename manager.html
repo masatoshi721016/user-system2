@@ -20,13 +20,14 @@
         .table-container { overflow-x: auto; margin-bottom: 20px; }
         .badge-deleted { background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px; vertical-align: middle; }
         .row-deleted { background: #fdf2f2; color: #666; }
+        .auto-refresh-notice { font-size: 12px; color: #666; margin-left: 10px; font-weight: normal; }
     </style>
 </head>
 <body>
     <!-- 一覧ページ -->
     <div id="page-list" class="page active">
         <div class="card">
-            <h2>登録者一覧管理</h2>
+            <h2>登録者一覧管理 <span class="auto-refresh-notice">（※15秒ごとに自動更新されます）</span></h2>
             <div class="status" id="status-msg"></div>
             <div style="margin-bottom: 10px; display: flex; gap: 10px;">
                 <button class="btn-primary" onclick="loadUsers()">手動更新</button>
@@ -61,28 +62,35 @@
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
 
-        async function loadUsers() {
-            document.getElementById('status-msg').innerText = "読み込み中...";
+        async function loadUsers(isAuto = false) {
+            if (!isAuto) {
+                document.getElementById('status-msg').innerText = "読み込み中...";
+            }
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             const users = await res.json();
             const tbody = document.getElementById('user-tbody');
+            
+            // 現在チェックが入っている行のIDを保持（自動更新時にチェックが消えないようにするため）
+            const checkedRows = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+
             tbody.innerHTML = '';
 
             users.forEach(u => {
                 const isDeleted = (u.status === "削除済み");
                 const badge = isDeleted ? `<span class="badge-deleted">削除済み</span>` : "";
                 const rowClass = isDeleted ? `class="row-deleted"` : "";
+                const isChecked = checkedRows.includes(String(u.row)) ? "checked" : "";
 
                 tbody.innerHTML += `
                     <tr ${rowClass}>
-                        <td><input type="checkbox" class="row-checkbox" value="${u.row}" data-name="${u.name}"></td>
+                        <td><input type="checkbox" class="row-checkbox" value="${u.row}" data-name="${u.name}" ${isChecked}></td>
                         <td>${u.name} ${badge}</td>
                         <td>${u.pin}</td>
                         <td>${u.date}</td>
                     </tr>
                 `;
             });
-            document.getElementById('status-msg').innerText = "最新データを読み込みました";
+            document.getElementById('status-msg').innerText = isAuto ? "最新データを自動更新しました" : "最新データを読み込みました";
         }
 
         async function showDetailsPage() {
@@ -107,7 +115,6 @@
                 if (records && records.length > 0) {
                     hasData = true;
 
-                    // 降順（日付の新しい順）にソート
                     records.sort((a, b) => {
                         const dateA = new Date(a["記録日"] || a["日付"] || 0);
                         const dateB = new Date(b["記録日"] || b["日付"] || 0);
@@ -123,7 +130,6 @@
                     html += `</tr></thead><tbody>`;
 
                     records.forEach(rec => {
-                        // 日付から時間部分を除外する（YYYY/MM/DD のみ抽出）
                         let rawDate = rec["記録日"] || rec["日付"] || '-';
                         let dateOnly = rawDate.split(' ')[0];
 
@@ -183,7 +189,15 @@
             loadUsers();
         }
 
+        // 初期読み込み
         loadUsers();
+
+        // 15秒ごとに一覧画面を自動更新（詳細画面を開いているときは更新をスキップ）
+        setInterval(() => {
+            if (document.getElementById('page-list').classList.contains('active')) {
+                loadUsers(true);
+            }
+        }, 15000);
     </script>
 </body>
 </html>
