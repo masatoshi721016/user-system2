@@ -177,7 +177,6 @@
                 currentUser = user.name; 
                 document.getElementById('login-pin').value = ''; 
                 
-                // 時間帯に応じた挨拶の生成
                 const hour = new Date().getHours();
                 let greet = "こんにちは！";
                 if (hour >= 4 && hour < 12) {
@@ -187,7 +186,6 @@
                 }
                 document.getElementById('welcome-msg').innerText = `${currentUser}さん ${greet}`;
 
-                // フォームの入力項目をリセット
                 document.getElementById('記録日').value = new Date().toISOString().split('T')[0];
                 document.getElementById('体調').value = "";
                 document.getElementById('服薬今朝').value = "";
@@ -220,16 +218,34 @@
             changeView('view-confirm');
         }
 
-        async function submitData() {
+        async function submitData(isOverwrite = false) {
             let query = `${GAS_URL}?action=record&name=${encodeURIComponent(currentUser)}`;
             for (let key in formData) query += `&${key}=${encodeURIComponent(formData[key])}`;
-            await fetch(query);
+            if (isOverwrite) {
+                query += `&overwrite=true`;
+            }
             
-            document.getElementById('login-pin').value = '';
-            document.getElementById('reg-name').value = '';
-            document.getElementById('reg-pin').value = '';
-            changeView('view-auth');
-            alert("送信が完了しました。");
+            const res = await fetch(query);
+            const result = await res.json();
+
+            // 同じ日付のデータがすでに存在する場合の確認処理
+            if (result.status === "exists_date") {
+                const recordDate = formData['記録日'] || '指定された日付';
+                if (confirm(`すでに ${recordDate} のデータが存在します。上書きしますか？`)) {
+                    await submitData(true); // 上書きフラグを立てて再度送信
+                }
+                return;
+            }
+
+            if (result.status === "success") {
+                document.getElementById('login-pin').value = '';
+                document.getElementById('reg-name').value = '';
+                document.getElementById('reg-pin').value = '';
+                changeView('view-auth');
+                alert("送信が完了しました。");
+            } else {
+                alert("エラーが発生しました。");
+            }
         }
 
         function changeView(viewId) {
