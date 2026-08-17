@@ -20,6 +20,7 @@
         .row-inputs > div { flex: 1; text-align: center; }
         .row-inputs small { font-size: 11px; color: #64748b; display: block; margin-bottom: 4px; }
         .view { display: none; } .view.active { display: block; }
+        .welcome-title { text-align: center; font-size: 17px; color: #3b82f6; margin-bottom: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -44,6 +45,7 @@
     </div>
 
     <div id="view-form" class="card view">
+        <div id="welcome-msg" class="welcome-title"></div>
         <h2>体調管理チェック</h2>
         <div class="form-group"><label>記録日</label><input type="date" id="記録日" onchange="checkDate(this)"></div>
         <div class="form-group"><label>体調</label><select id="体調"><option value="">選択</option><option>〇</option><option>△</option><option>✕</option></select></div>
@@ -83,7 +85,6 @@
             if (!el.value) return;
             const selectedDate = new Date(el.value);
             const today = new Date();
-            // 時間情報をクリアして日付のみで比較
             today.setHours(0, 0, 0, 0);
             selectedDate.setHours(0, 0, 0, 0);
 
@@ -127,7 +128,6 @@
         let formData = {};
 
         function switchTab(type) {
-            // タブ切り替え時も入力欄を綺麗にクリア
             document.getElementById('login-pin').value = '';
             document.getElementById('reg-name').value = '';
             document.getElementById('reg-pin').value = '';
@@ -177,7 +177,17 @@
                 currentUser = user.name; 
                 document.getElementById('login-pin').value = ''; 
                 
-                // フォームの入力項目をすべてリセット（クリア）
+                // 時間帯に応じた挨拶の生成
+                const hour = new Date().getHours();
+                let greet = "こんにちは！";
+                if (hour >= 4 && hour < 12) {
+                    greet = "おはようございます！";
+                } else if (hour >= 18 || hour < 4) {
+                    greet = "こんばんは！";
+                }
+                document.getElementById('welcome-msg').innerText = `${currentUser}さん ${greet}`;
+
+                // フォームの入力項目をリセット
                 document.getElementById('記録日').value = new Date().toISOString().split('T')[0];
                 document.getElementById('体調').value = "";
                 document.getElementById('服薬今朝').value = "";
@@ -215,7 +225,6 @@
             for (let key in formData) query += `&${key}=${encodeURIComponent(formData[key])}`;
             await fetch(query);
             
-            // 送信完了時に認証画面（ログイン画面）に戻し、PIN欄を確実に空にする
             document.getElementById('login-pin').value = '';
             document.getElementById('reg-name').value = '';
             document.getElementById('reg-pin').value = '';
