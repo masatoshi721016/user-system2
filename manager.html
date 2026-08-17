@@ -8,7 +8,11 @@
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
-        th { background: #f1f3f5; }
+        th { background: #f1f3f5; cursor: pointer; user-select: none; transition: background 0.2s; }
+        th:hover { background: #e2e8f0; }
+        th::after { content: " ↕"; font-size: 11px; color: #64748b; }
+        th.asc::after { content: " ▲"; color: #2563eb; }
+        th.desc::after { content: " ▼"; color: #2563eb; }
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
         .btn-primary { background: #007BFF; color: white; }
         .btn-success { background: #28a745; color: white; }
@@ -19,10 +23,10 @@
         .page.active { display: block; }
         .table-container { overflow-x: auto; margin-bottom: 20px; }
         .badge-deleted { background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px; vertical-align: middle; }
-        .row-deleted { background: #fdf2f2; color: #666; }
+        .row-deleted { background: #1e293b; color: #94a3b8; }
+        .row-deleted td { border-color: #334155; }
         .auto-refresh-notice { font-size: 12px; color: #666; margin-left: 10px; font-weight: normal; }
         
-        /* 選択枠いっぱいの正方形ボタン */
         .select-btn {
             width: 36px;
             height: 36px;
@@ -50,7 +54,6 @@
     </style>
 </head>
 <body>
-    <!-- 一覧ページ -->
     <div id="page-list" class="page active">
         <div class="card">
             <h2>登録者一覧管理 <span class="auto-refresh-notice">（※15秒ごとに自動更新されます）</span></h2>
@@ -63,7 +66,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 50px;">選択</th>
+                        <th style="width: 50px; cursor: default;" class="no-sort">選択</th>
                         <th>名前</th>
                         <th>PIN</th>
                         <th>登録日時</th>
@@ -74,7 +77,6 @@
         </div>
     </div>
 
-    <!-- 詳細ページ -->
     <div id="page-detail" class="page">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -132,6 +134,8 @@
             }
         }
 
+        let globalUserRecordsMap = {};
+
         async function showDetailsPage() {
             const selectedBtns = document.querySelectorAll('.select-btn.selected');
             if (selectedBtns.length === 0) {
@@ -143,37 +147,58 @@
             document.getElementById('status-msg').innerText = "詳細データを読み込み中...";
             
             const res = await fetch(`${GAS_URL}?action=getMultipleRecords&names=${encodeURIComponent(names)}&t=${new Date().getTime()}`);
-            const userRecordsMap = await res.json();
+            globalUserRecordsMap = await res.json();
             
+            renderDetailTables();
+
+            document.getElementById('page-list').classList.remove('active');
+            document.getElementById('page-detail').classList.add('active');
+            document.getElementById('status-msg').innerText = "";
+        }
+
+        function renderDetailTables() {
             const detailContent = document.getElementById('detail-content');
             detailContent.innerHTML = "";
             
             let hasData = false;
-            for (let name in userRecordsMap) {
-                const records = userRecordsMap[name];
+            for (let name in globalUserRecordsMap) {
+                const records = globalUserRecordsMap[name];
                 if (records && records.length > 0) {
                     hasData = true;
 
-                    // 昇順（古い日付が上：8/6, 8/12, 8/16...）にソート
-                    records.sort((a, b) => {
-                        const dateA = new Date(a["記録日"] || a["日付"] || 0);
-                        const dateB = new Date(b["記録日"] || b["日付"] || 0);
-                        return dateA - dateB;
+                    let html = `<h3>${name} さんの記録</h3>`;
+                    html += `<div class="table-container"><table data-username="${name}"><thead><tr>`;
+                    
+                    const columns = [
+                        { key: "日付", label: "日付" },
+                        { key: "体調", label: "体調" },
+                        { key: "服薬今朝", label: "服薬今朝" },
+                        { key: "服薬昨昼", label: "服薬昼" },
+                        { key: "服薬昨夕", label: "服薬夕" },
+                        { key: "服薬就寝前", label: "服薬就寝前" },
+                        { key: "食事今朝", label: "食事今朝" },
+                        { key: "食事昨昼", label: "食事昼" },
+                        { key: "食事昨夕", label: "食事夕" },
+                        { key: "昨夜就寝時間", label: "昨夜就寝時間" },
+                        { key: "本日起床時間", label: "本日起床時間" },
+                        { key: "体温", label: "体温" },
+                        { key: "特記事項", label: "特記事項" },
+                        { key: "更新日時", label: "登録日時(更新)" }
+                    ];
+
+                    columns.forEach(col => {
+                        html += `<th onclick="sortTable('${name}', '${col.key}', this)">${col.label}</th>`;
                     });
 
-                    const deletedRecord = records.find(rec => rec["ステータス"] && rec["ステータス"].startsWith("過去に削除済み"));
-                    const deletedBadge = deletedRecord ? `<span class="badge-deleted">${deletedRecord["ステータス"]}</span>` : "";
-
-                    let html = `<h3>${name} さんの記録 ${deletedBadge}</h3>`;
-                    html += `<div class="table-container"><table><thead><tr>`;
-                    html += `<th>日付</th><th>体調</th><th>服薬今朝</th><th>服薬昼</th><th>服薬夕</th><th>服薬就寝前</th><th>食事今朝</th><th>食事昼</th><th>食事夕</th><th>昨夜就寝時間</th><th>本日起床時間</th><th>体温</th><th>特記事項</th><th>登録日時(更新)</th>`;
                     html += `</tr></thead><tbody>`;
 
                     records.forEach(rec => {
                         let rawDate = rec["記録日"] || rec["日付"] || '-';
                         let dateOnly = rawDate.split(' ')[0];
+                        const isDeletedRow = rec["ステータス"] && rec["ステータス"].startsWith("過去に削除済み");
+                        const rowClass = isDeletedRow ? `class="row-deleted"` : "";
 
-                        html += `<tr>`;
+                        html += `<tr ${rowClass}>`;
                         html += `<td><b>${dateOnly}</b></td>`;
                         html += `<td>${rec["体調"] || '-'}</td>`;
                         html += `<td>${rec["服薬今朝"] || '-'}</td>`;
@@ -199,10 +224,63 @@
             if (!hasData) {
                 detailContent.innerHTML = "<p>選択されたユーザーの記録データがまだありません。</p>";
             }
+        }
 
-            document.getElementById('page-list').classList.remove('active');
-            document.getElementById('page-detail').classList.add('active');
-            document.getElementById('status-msg').innerText = "";
+        const sortStates = {};
+
+        function sortTable(name, key, thEl) {
+            const records = globalUserRecordsMap[name];
+            if (!records) return;
+
+            const stateKey = name + "_" + key;
+            const currentDir = sortStates[stateKey] || 'asc';
+            const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
+            sortStates[stateKey] = nextDir;
+
+            const table = thEl.closest('table');
+            table.querySelectorAll('th').th ? null : table.querySelectorAll('th').forEach(th => th.className = '');
+            thEl.className = nextDir;
+
+            const healthOrder = { "〇": 1, "△": 2, "✕": 3, "-": 4 };
+            const medOrder = { "〇": 1, "／": 2, "✕": 3, "-": 4 };
+
+            records.sort((a, b) => {
+                let valA = a[key === "日付" ? ("記録日" in a ? "記録日" : "日付") : key] || "";
+                let valB = b[key === "日付" ? ("記録日" in b ? "記録日" : "日付") : key] || "";
+
+                if (key === "体調") {
+                    valA = healthOrder[valA.trim()] || 99;
+                    valB = healthOrder[valB.trim()] || 99;
+                } else if (key.includes("服薬") || key.includes("食事")) {
+                    valA = medOrder[valA.trim()] || 99;
+                    valB = medOrder[valB.trim()] || 99;
+                } else if (key === "日付" || key === "更新日時") {
+                    valA = new Date(valA).getTime() || 0;
+                    valB = new Date(valB).getTime() || 0;
+                } else if (key === "体温") {
+                    valA = parseFloat(valA) || 0;
+                    valB = parseFloat(valB) || 0;
+                } else {
+                    valA = String(valA);
+                    valB = String(valB);
+                }
+
+                if (valA < valB) return nextDir === 'asc' ? -1 : 1;
+                if (valA > valB) return nextDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            renderDetailTables();
+            
+            const updatedTable = document.querySelector(`table[data-username="${name}"]`);
+            if (updatedTable) {
+                const ths = updatedTable.querySelectorAll('th');
+                ths.forEach(th => {
+                    if (th.textContent.includes(thEl.textContent.replace(/[ ▲▼]/g, ''))) {
+                        th.className = nextDir;
+                    }
+                });
+            }
         }
 
         function backToList() {
