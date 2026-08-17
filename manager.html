@@ -21,6 +21,32 @@
         .badge-deleted { background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px; vertical-align: middle; }
         .row-deleted { background: #fdf2f2; color: #666; }
         .auto-refresh-notice { font-size: 12px; color: #666; margin-left: 10px; font-weight: normal; }
+        
+        /* 選択枠いっぱいの正方形ボタン */
+        .select-btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+        }
+        .select-btn.selected {
+            background: #2563eb;
+            border-color: #1d4ed8;
+            color: white;
+        }
+        .select-btn:hover {
+            border-color: #94a3b8;
+        }
     </style>
 </head>
 <body>
@@ -37,7 +63,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>選択</th>
+                        <th style="width: 50px;">選択</th>
                         <th>名前</th>
                         <th>PIN</th>
                         <th>登録日時</th>
@@ -70,8 +96,8 @@
             const users = await res.json();
             const tbody = document.getElementById('user-tbody');
             
-            // 現在チェックが入っている行のIDを保持（自動更新時にチェックが消えないようにするため）
-            const checkedRows = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+            // 自動更新時にも現在選択されている行（name）を保持
+            const selectedNames = Array.from(document.querySelectorAll('.select-btn.selected')).map(btn => btn.getAttribute('data-name'));
 
             tbody.innerHTML = '';
 
@@ -79,11 +105,16 @@
                 const isDeleted = (u.status === "削除済み");
                 const badge = isDeleted ? `<span class="badge-deleted">削除済み</span>` : "";
                 const rowClass = isDeleted ? `class="row-deleted"` : "";
-                const isChecked = checkedRows.includes(String(u.row)) ? "checked" : "";
+                const isSelected = selectedNames.includes(u.name);
+                
+                const btnClass = isSelected ? "select-btn selected" : "select-btn";
+                const btnText = isSelected ? "選択中" : "選択";
 
                 tbody.innerHTML += `
                     <tr ${rowClass}>
-                        <td><input type="checkbox" class="row-checkbox" value="${u.row}" data-name="${u.name}" ${isChecked}></td>
+                        <td style="padding: 4px;">
+                            <button class="${btnClass}" data-row="${u.row}" data-name="${u.name}" onclick="toggleSelect(this)">${btnText}</button>
+                        </td>
                         <td>${u.name} ${badge}</td>
                         <td>${u.pin}</td>
                         <td>${u.date}</td>
@@ -93,14 +124,24 @@
             document.getElementById('status-msg').innerText = isAuto ? "最新データを自動更新しました" : "最新データを読み込みました";
         }
 
+        // 行のボタンをクリックしたときの選択切替
+        function toggleSelect(btn) {
+            btn.classList.toggle('selected');
+            if (btn.classList.contains('selected')) {
+                btn.innerText = "選択中";
+            } else {
+                btn.innerText = "選択";
+            }
+        }
+
         async function showDetailsPage() {
-            const checked = document.querySelectorAll('.row-checkbox:checked');
-            if (checked.length === 0) {
+            const selectedBtns = document.querySelectorAll('.select-btn.selected');
+            if (selectedBtns.length === 0) {
                 document.getElementById('status-msg').innerText = "詳細を見るユーザーを1名以上選択してください";
                 return;
             }
             
-            const names = Array.from(checked).map(cb => cb.getAttribute('data-name')).join(',');
+            const names = Array.from(selectedBtns).map(btn => btn.getAttribute('data-name')).join(',');
             document.getElementById('status-msg').innerText = "詳細データを読み込み中...";
             
             const res = await fetch(`${GAS_URL}?action=getMultipleRecords&names=${encodeURIComponent(names)}&t=${new Date().getTime()}`);
@@ -171,13 +212,13 @@
         }
 
         async function deleteSelected() {
-            const checked = document.querySelectorAll('.row-checkbox:checked');
-            if (checked.length === 0) {
+            const selectedBtns = document.querySelectorAll('.select-btn.selected');
+            if (selectedBtns.length === 0) {
                 document.getElementById('status-msg').innerText = "削除する項目が選択されていません";
                 return;
             }
 
-            const rows = Array.from(checked).map(cb => parseInt(cb.value));
+            const rows = Array.from(selectedBtns).map(btn => parseInt(btn.getAttribute('data-row')));
             document.getElementById('status-msg').innerText = "削除処理中...";
 
             await fetch(GAS_URL, { 
