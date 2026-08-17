@@ -170,7 +170,7 @@
         }
 
         let globalUserRecordsMap = {};
-        let globalOriginalRecordsMap = {}; // 最初に取得したときの元の順番を保持用
+        let globalOriginalRecordsMap = {};
         const sortStates = {};
 
         async function showDetailsPage() {
@@ -186,10 +186,8 @@
             const res = await fetch(`${GAS_URL}?action=getMultipleRecords&names=${encodeURIComponent(names)}&t=${new Date().getTime()}`);
             globalUserRecordsMap = await res.json();
             
-            // 元の順番（初期状態）を保持しておくためのディープコピー
             globalOriginalRecordsMap = JSON.parse(JSON.stringify(globalUserRecordsMap));
             
-            // 初回表示時は全ユーザーのデータを「日付」の昇順（古い日付が上）にデフォルトソート
             for (let name in globalUserRecordsMap) {
                 const records = globalUserRecordsMap[name];
                 if (records && records.length > 0) {
@@ -210,6 +208,16 @@
         }
 
         function renderDetailTables() {
+            // 再描画前のスクロール位置を保持しておく
+            const scrollPositions = {};
+            document.querySelectorAll('#detail-content table').forEach(table => {
+                const name = table.getAttribute('data-username');
+                const container = table.closest('.table-container');
+                if (name && container) {
+                    scrollPositions[name] = container.scrollLeft;
+                }
+            });
+
             const detailContent = document.getElementById('detail-content');
             detailContent.innerHTML = "";
             
@@ -279,6 +287,15 @@
             if (!hasData) {
                 detailContent.innerHTML = "<p>選択されたユーザーの記録データがまだありません。</p>";
             }
+
+            // 再描画後にスクロール位置を復元する
+            document.querySelectorAll('#detail-content table').forEach(table => {
+                const name = table.getAttribute('data-username');
+                const container = table.closest('.table-container');
+                if (name && container && scrollPositions[name] !== undefined) {
+                    container.scrollLeft = scrollPositions[name];
+                }
+            });
         }
 
         function sortTable(name, key, thEl) {
@@ -294,15 +311,13 @@
             } else if (currentDir === 'asc') {
                 nextDir = 'desc';
             } else {
-                nextDir = 'none'; // 3回目のクリックで初期の順番に戻す
+                nextDir = 'none';
             }
             
-            // 他の列のソート状態を一旦すべてクリア
             const columns = ["日付", "体調", "服薬今朝", "服薬昨昼", "服薬昨夕", "服薬就寝前", "食事今朝", "食事昨昼", "食事昨夕", "昨夜就寝時間", "本日起床時間", "体温", "特記事項", "更新日時"];
             columns.forEach(c => { delete sortStates[name + "_" + c]; });
 
             if (nextDir === 'none') {
-                // 最初に取得したときの元の順番に復元
                 globalUserRecordsMap[name] = JSON.parse(JSON.stringify(globalOriginalRecordsMap[name]));
                 delete sortStates[stateKey];
             } else {
