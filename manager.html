@@ -54,7 +54,7 @@
         .btn-success { background: #28a745; color: white; }
         .btn-secondary { background: #6c757d; color: white; }
         .btn-danger { background: #dc3545; color: white; }
-        .btn-indigo { background: #4f46e5; color: white; }
+        .btn-indigo { background: #7c3aed; color: white; }
         
         .status { margin-bottom: 10px; font-weight: bold; color: #333; min-height: 20px; }
         .page { display: none; }
@@ -156,7 +156,7 @@
     <div id="graph-modal" class="modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 id="modal-title" style="margin: 0; color: #334155;">グラフ表示</h3>
+                <h3 id="modal-title" style="margin: 0; color: #334155;">グラフ表示（直近1ヶ月）</h3>
                 <button class="btn-secondary" onclick="closeGraphModal()" style="padding: 5px 12px; font-size: 12px;">✕ 閉じる</button>
             </div>
             <div style="position: relative; height: 320px; width: 100%;">
@@ -287,8 +287,8 @@
                     // 各項目の上に配置するグラフ表示ボタンエリア
                     html += `
                         <div style="margin-bottom: 12px; display: flex; gap: 10px;">
-                            <button class="btn-danger" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'temp')">📈 体温グラフを表示</button>
-                            <button class="btn-indigo" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'time')">📈 就寝・起床時間グラフを表示</button>
+                            <button class="btn-danger" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'temp')">📈 体温グラフを表示 (直近1ヶ月)</button>
+                            <button class="btn-indigo" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'time')">📈 就寝・起床時間グラフを表示 (直近1ヶ月)</button>
                         </div>
                     `;
 
@@ -325,6 +325,14 @@
                         const isDeletedRow = rec["ステータス"] && rec["ステータス"].startsWith("過去に削除済み");
                         const rowClass = isDeletedRow ? `class="row-deleted"` : "";
 
+                        // 体温の35度以下・37度以上の赤字判定
+                        let tempValStr = rec["体温"];
+                        let tempVal = parseFloat(tempValStr);
+                        let tempStyle = "";
+                        if (!isNaN(tempVal) && (tempVal < 35.0 || tempVal >= 37.0)) {
+                            tempStyle = 'style="color: #dc3545; font-weight: bold;"';
+                        }
+
                         html += `<tr ${rowClass}>`;
                         html += `<td><b>${dateOnly}</b></td>`;
                         html += `<td>${rec["体調"] || '-'}</td>`;
@@ -337,7 +345,7 @@
                         html += `<td>${rec["食事昨夕"] || '-'}</td>`;
                         html += `<td>${rec["昨夜就寝時間"] || '-'}</td>`;
                         html += `<td>${rec["本日起床時間"] || '-'}</td>`;
-                        html += `<td>${rec["体温"] || '-'}</td>`;
+                        html += `<td ${tempStyle}>${tempValStr || '-'}</td>`;
                         html += `<td style="text-align:left; max-width:150px; overflow:hidden; text-overflow:ellipsis;">${rec["特記事項"] || '-'}</td>`;
                         html += `<td>${rec["更新日時"] || '-'}</td>`;
                         html += `</tr>`;
@@ -372,7 +380,19 @@
                 return vA - vB;
             });
 
-            const labels = sorted.map(r => (r["記録日"] || r["日付"] || '').split(' ')[0]);
+            // 最大1ヶ月分（最新の日付から過去1ヶ月間）に絞り込み
+            let chartRecords = sorted;
+            if (sorted.length > 0) {
+                const latestDate = new Date(sorted[sorted.length - 1]["記録日"] || sorted[sorted.length - 1]["日付"]);
+                const oneMonthAgo = new Date(latestDate);
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                chartRecords = sorted.filter(r => {
+                    const d = new Date(r["記録日"] || r["日付"]);
+                    return d >= oneMonthAgo;
+                });
+            }
+
+            const labels = chartRecords.map(r => (r["記録日"] || r["日付"] || '').split(' ')[0]);
             const modalTitle = document.getElementById('modal-title');
             
             if (activeModalChart) {
@@ -382,8 +402,12 @@
             const ctx = document.getElementById('modal-chart').getContext('2d');
 
             if (type === 'temp') {
-                modalTitle.innerText = `${name} さんの体温推移グラフ`;
-                const tempValues = sorted.map(r => parseFloat(r["体温"]) || null);
+                modalTitle.innerText = `${name} さんの体温推移グラフ（直近1ヶ月）`;
+                const tempValues = chartRecords.map(r => parseFloat(r["体温"]) || null);
+                
+                // 35度未満または37度以上の場合にポイントを赤く・大きくする
+                const tempColors = tempValues.map(v => (v !== null && (v < 35.0 || v >= 37.0)) ? '#dc3545' : '#2563eb');
+                const tempRadii = tempValues.map(v => (v !== null && (v < 35.0 || v >= 37.0)) ? 6 : 3);
 
                 activeModalChart = new Chart(ctx, {
                     type: 'line',
@@ -392,8 +416,11 @@
                         datasets: [{
                             label: '体温 (°C)',
                             data: tempValues,
-                            borderColor: '#dc3545',
-                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            pointBackgroundColor: tempColors,
+                            pointBorderColor: tempColors,
+                            pointRadius: tempRadii,
                             borderWidth: 2,
                             tension: 0.1,
                             spanGaps: true
@@ -408,9 +435,9 @@
                     }
                 });
             } else if (type === 'time') {
-                modalTitle.innerText = `${name} さんの就寝・起床時間推移グラフ`;
-                const sleepValues = sorted.map(r => timeToDecimal(r["昨夜就寝時間"]));
-                const wakeValues = sorted.map(r => timeToDecimal(r["本日起床時間"]));
+                modalTitle.innerText = `${name} さんの就寝・起床時間推移グラフ（直近1ヶ月）`;
+                const sleepValues = chartRecords.map(r => timeToDecimal(r["昨夜就寝時間"]));
+                const wakeValues = chartRecords.map(r => timeToDecimal(r["本日起床時間"]));
 
                 activeModalChart = new Chart(ctx, {
                     type: 'line',
@@ -420,8 +447,8 @@
                             {
                                 label: '就寝時間',
                                 data: sleepValues,
-                                borderColor: '#4f46e5',
-                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                borderColor: '#7c3aed', // 紫色
+                                backgroundColor: 'rgba(124, 58, 237, 0.1)',
                                 borderWidth: 2,
                                 tension: 0.1,
                                 spanGaps: true
@@ -429,8 +456,8 @@
                             {
                                 label: '起床時間',
                                 data: wakeValues,
-                                borderColor: '#2563eb',
-                                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                                borderColor: '#0284c7', // 明るい青・シアン系
+                                backgroundColor: 'rgba(2, 132, 199, 0.1)',
                                 borderWidth: 2,
                                 tension: 0.1,
                                 spanGaps: true
@@ -440,6 +467,9 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        plugins: { 
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } 
+                        },
                         scales: {
                             y: {
                                 min: 0,
