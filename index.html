@@ -65,9 +65,9 @@
             <div><small>夕</small><select id="食事昨夕"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
         </div>
 
-        <div class="form-group"><label>昨夜就寝時間</label><input type="text" id="昨夜就寝時間" placeholder="例: 2300" inputmode="numeric" onblur="formatTime(this)"></div>
-        <div class="form-group"><label>本日起床時間</label><input type="text" id="本日起床時間" placeholder="例: 0700" inputmode="numeric" onblur="formatTime(this)"></div>
-        <div class="form-group"><label>体温</label><input type="text" id="体温" placeholder="例: 36.5" inputmode="decimal" onblur="formatTemp(this)"></div>
+        <div class="form-group"><label>昨夜就寝時間</label><input type="text" id="昨夜就寝時間" placeholder="例: 2300" maxlength="4" inputmode="numeric" oninput="checkAutoAdvanceTime(this, '本日起床時間')"></div>
+        <div class="form-group"><label>本日起床時間</label><input type="text" id="本日起床時間" placeholder="例: 0700" maxlength="4" inputmode="numeric" oninput="checkAutoAdvanceTime(this, '体温')"></div>
+        <div class="form-group"><label>体温</label><input type="text" id="体温" placeholder="例: 36.5" maxlength="5" inputmode="decimal" oninput="checkAutoAdvanceTemp(this, '特記事項')"></div>
         <div class="form-group"><label>特記事項</label><textarea id="特記事項" placeholder="なし"></textarea></div>
         <button class="btn" onclick="goToConfirm()">確認画面へ</button>
     </div>
@@ -94,34 +94,41 @@
             }
         }
 
-        function formatTime(el) {
+        // 4桁入力時の時間判定と自動フォーカス移動
+        function checkAutoAdvanceTime(el, nextId) {
             let val = el.value.replace(/[^0-9]/g, '');
-            if (!val) { el.value = ""; return; }
-            while (val.length < 4) val = "0" + val;
-            let hours = parseInt(val.substring(0, 2), 10);
-            let mins = parseInt(val.substring(2, 4), 10);
-            if (hours >= 24 || mins >= 60) {
-                alert("無効な時間です（例: 2359まで）。入力内容を確認してください。");
-                el.value = "";
-                return;
+            if (val.length === 4) {
+                let hours = parseInt(val.substring(0, 2), 10);
+                let mins = parseInt(val.substring(2, 4), 10);
+                if (hours >= 24 || mins >= 60) {
+                    alert("無効な時間です（例: 2359まで）。入力内容を確認してください。");
+                    el.value = "";
+                    return;
+                }
+                el.value = val.substring(0, 2) + ":" + val.substring(2, 4);
+                const nextEl = document.getElementById(nextId);
+                if (nextEl) {
+                    nextEl.focus();
+                }
             }
-            el.value = val.substring(0, 2) + ":" + val.substring(2, 4);
         }
 
-        function formatTemp(el) {
-            let val = el.value.replace(/[^0-9.]/g, '');
-            if (!val) { el.value = ""; return; }
-            let num = parseFloat(val);
-            if (isNaN(num)) { el.value = ""; return; }
-            if (!val.includes('.') && num >= 100 && num <= 450) {
-                num = num / 10;
+        // 3桁入力時の体温判定と自動フォーカス移動
+        function checkAutoAdvanceTemp(el, nextId) {
+            let digits = el.value.replace(/[^0-9]/g, '');
+            if (digits.length === 3) {
+                let num = parseInt(digits, 10) / 10;
+                if (num < 30 || num > 45) {
+                    alert("体温の範囲が正しくありません（例: 36.5）");
+                    el.value = "";
+                    return;
+                }
+                el.value = num.toFixed(1) + "（°）";
+                const nextEl = document.getElementById(nextId);
+                if (nextEl) {
+                    nextEl.focus();
+                }
             }
-            if (num < 30 || num > 45) {
-                alert("体温の範囲が正しくありません（例: 36.5）");
-                el.value = "";
-                return;
-            }
-            el.value = num.toFixed(1) + "（°）";
         }
 
         let currentUser = "";
@@ -248,7 +255,6 @@
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             
-            // ログイン画面に戻った時は入力欄を必ず強制消去する
             if (viewId === 'view-auth') {
                 document.getElementById('login-pin').value = '';
                 document.getElementById('reg-pin').value = '';
