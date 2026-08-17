@@ -22,9 +22,11 @@
         .page { display: none; }
         .page.active { display: block; }
         .table-container { overflow-x: auto; margin-bottom: 20px; }
-        .badge-deleted { background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px; vertical-align: middle; }
-        .row-deleted { background: #1e293b; color: #94a3b8; }
-        .row-deleted td { border-color: #334155; }
+        
+        /* 削除済み行のスタイル：グレー系の背景に黒（または濃いグレー）の文字色 */
+        .row-deleted { background: #e2e8f0; color: #1e293b; }
+        .row-deleted td { border-color: #cbd5e1; }
+
         .auto-refresh-notice { font-size: 12px; color: #666; margin-left: 10px; font-weight: normal; }
         
         .select-btn {
@@ -104,7 +106,6 @@
 
             users.forEach(u => {
                 const isDeleted = (u.status === "削除済み");
-                const badge = isDeleted ? `<span class="badge-deleted">削除済み</span>` : "";
                 const rowClass = isDeleted ? `class="row-deleted"` : "";
                 const isSelected = selectedNames.includes(u.name);
                 
@@ -116,7 +117,7 @@
                         <td style="padding: 4px;">
                             <button class="${btnClass}" data-row="${u.row}" data-name="${u.name}" onclick="toggleSelect(this)">${btnText}</button>
                         </td>
-                        <td>${u.name} ${badge}</td>
+                        <td>${u.name}</td>
                         <td>${u.pin}</td>
                         <td>${u.date}</td>
                     </tr>
@@ -135,6 +136,7 @@
         }
 
         let globalUserRecordsMap = {};
+        const sortStates = {};
 
         async function showDetailsPage() {
             const selectedBtns = document.querySelectorAll('.select-btn.selected');
@@ -149,6 +151,19 @@
             const res = await fetch(`${GAS_URL}?action=getMultipleRecords&names=${encodeURIComponent(names)}&t=${new Date().getTime()}`);
             globalUserRecordsMap = await res.json();
             
+            // 初回表示時は全ユーザーのデータを「日付」の昇順（古い日付が上）にデフォルトソート
+            for (let name in globalUserRecordsMap) {
+                const records = globalUserRecordsMap[name];
+                if (records && records.length > 0) {
+                    records.sort((a, b) => {
+                        const valA = new Date(a["記録日"] || a["日付"] || 0).getTime();
+                        const valB = new Date(b["記録日"] || b["日付"] || 0).getTime();
+                        return valA - valB;
+                    });
+                    sortStates[name + "_日付"] = 'asc';
+                }
+            }
+
             renderDetailTables();
 
             document.getElementById('page-list').classList.remove('active');
@@ -187,7 +202,9 @@
                     ];
 
                     columns.forEach(col => {
-                        html += `<th onclick="sortTable('${name}', '${col.key}', this)">${col.label}</th>`;
+                        const stateKey = name + "_" + col.key;
+                        const currentSortClass = sortStates[stateKey] || '';
+                        html += `<th class="${currentSortClass}" onclick="sortTable('${name}', '${col.key}', this)">${col.label}</th>`;
                     });
 
                     html += `</tr></thead><tbody>`;
@@ -226,20 +243,18 @@
             }
         }
 
-        const sortStates = {};
-
         function sortTable(name, key, thEl) {
             const records = globalUserRecordsMap[name];
             if (!records) return;
 
             const stateKey = name + "_" + key;
-            const currentDir = sortStates[stateKey] || 'asc';
+            const currentDir = sortStates[stateKey] || 'desc';
             const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
+            
+            // 他の列のソート状態をリセットし、今回の列の状態を保存
+            const columns = ["日付", "体調", "服薬今朝", "服薬昨昼", "服薬昨夕", "服薬就寝前", "食事今朝", "食事昨昼", "食事昨夕", "昨夜就寝時間", "本日起床時間", "体温", "特記事項", "更新日時"];
+            columns.forEach(c => { delete sortStates[name + "_" + c]; });
             sortStates[stateKey] = nextDir;
-
-            const table = thEl.closest('table');
-            table.querySelectorAll('th').th ? null : table.querySelectorAll('th').forEach(th => th.className = '');
-            thEl.className = nextDir;
 
             const healthOrder = { "〇": 1, "△": 2, "✕": 3, "-": 4 };
             const medOrder = { "〇": 1, "／": 2, "✕": 3, "-": 4 };
@@ -271,16 +286,6 @@
             });
 
             renderDetailTables();
-            
-            const updatedTable = document.querySelector(`table[data-username="${name}"]`);
-            if (updatedTable) {
-                const ths = updatedTable.querySelectorAll('th');
-                ths.forEach(th => {
-                    if (th.textContent.includes(thEl.textContent.replace(/[ ▲▼]/g, ''))) {
-                        th.className = nextDir;
-                    }
-                });
-            }
         }
 
         function backToList() {
