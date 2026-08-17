@@ -395,7 +395,16 @@
                 });
             }
 
-            const labels = chartRecords.map(r => (r["記録日"] || r["日付"] || '').split(' ')[0]);
+            // 日付を mm/dd 形式に変換（年は除外）
+            const labels = chartRecords.map(r => {
+                const raw = (r["記録日"] || r["日付"] || '').split(' ')[0];
+                const parts = raw.split(/[-/]/);
+                if (parts.length >= 3) {
+                    return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+                }
+                return raw;
+            });
+
             const modalTitle = document.getElementById('modal-title');
             const modalSubDesc = document.getElementById('modal-sub-desc');
             
@@ -414,7 +423,6 @@
                 const dataMin = validTemps.length > 0 ? Math.min(...validTemps) : 36.0;
                 const dataMax = validTemps.length > 0 ? Math.max(...validTemps) : 37.0;
 
-                // データの最大値・最小値が欠けないようにしつつ、要注意ゾーン（35以下・37以上）も必ず包含する軸を計算
                 let yMin = Math.min(34.0, Math.floor(dataMin * 10) / 10 - 0.2);
                 let yMax = Math.max(39.0, Math.ceil(dataMax * 10) / 10 + 0.2);
 
@@ -445,21 +453,19 @@
                         plugins: {
                             annotation: {
                                 annotations: {
-                                    // 37.0°C以上の要注意ゾーン（上側）
                                     dangerHigh: {
                                         type: 'box',
                                         yMin: 37.0,
                                         yMax: yMax,
-                                        backgroundColor: 'rgba(236, 72, 153, 0.15)', // 薄いピンク・紫系
+                                        backgroundColor: 'rgba(236, 72, 153, 0.15)',
                                         borderColor: 'rgba(236, 72, 153, 0.3)',
                                         borderWidth: 1
                                     },
-                                    // 35.0°C以下の要注意ゾーン（下側）
                                     dangerLow: {
                                         type: 'box',
                                         yMin: yMin,
                                         yMax: 35.0,
-                                        backgroundColor: 'rgba(236, 72, 153, 0.15)', // 薄いピンク・紫系
+                                        backgroundColor: 'rgba(236, 72, 153, 0.15)',
                                         borderColor: 'rgba(236, 72, 153, 0.3)',
                                         borderWidth: 1
                                     }
@@ -470,7 +476,7 @@
                 });
             } else if (type === 'time') {
                 modalTitle.innerText = `${name} さんの就寝・起床時間推移グラフ（直近1ヶ月）`;
-                modalSubDesc.innerText = ""; // 時間グラフには不要のため空欄
+                modalSubDesc.innerText = "";
                 
                 const sleepValues = chartRecords.map(r => timeToDecimal(r["昨夜就寝時間"]));
                 const wakeValues = chartRecords.map(r => timeToDecimal(r["本日起床時間"]));
@@ -483,7 +489,7 @@
                             {
                                 label: '就寝時間',
                                 data: sleepValues,
-                                borderColor: '#7c3aed', // 紫色
+                                borderColor: '#7c3aed',
                                 backgroundColor: 'rgba(124, 58, 237, 0.1)',
                                 borderWidth: 2,
                                 tension: 0.1,
