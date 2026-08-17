@@ -5,6 +5,8 @@
     <title>管理画面</title>
     <!-- Chart.jsの読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.jsのAnnotation Pluginの読み込み（背景色付け用） -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         body { font-family: sans-serif; padding: 15px; background: #f4f6f8; font-size: 14px; max-width: 1100px; margin: 0 auto; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
@@ -155,11 +157,12 @@
     <!-- グラフ表示用モーダル画面 -->
     <div id="graph-modal" class="modal">
         <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h3 id="modal-title" style="margin: 0; color: #334155;">グラフ表示（直近1ヶ月）</h3>
                 <button class="btn-secondary" onclick="closeGraphModal()" style="padding: 5px 12px; font-size: 12px;">✕ 閉じる</button>
             </div>
-            <div style="position: relative; height: 320px; width: 100%;">
+            <div id="modal-sub-desc" style="font-size: 11px; color: #dc3545; margin-bottom: 8px; font-weight: bold; min-height: 16px;"></div>
+            <div style="position: relative; height: 300px; width: 100%;">
                 <canvas id="modal-chart"></canvas>
             </div>
         </div>
@@ -394,6 +397,7 @@
 
             const labels = chartRecords.map(r => (r["記録日"] || r["日付"] || '').split(' ')[0]);
             const modalTitle = document.getElementById('modal-title');
+            const modalSubDesc = document.getElementById('modal-sub-desc');
             
             if (activeModalChart) {
                 activeModalChart.destroy();
@@ -403,11 +407,9 @@
 
             if (type === 'temp') {
                 modalTitle.innerText = `${name} さんの体温推移グラフ（直近1ヶ月）`;
-                const tempValues = chartRecords.map(r => parseFloat(r["体温"]) || null);
+                modalSubDesc.innerText = "※ 35.0°C以下および37.0°C以上のエリア（上下の薄紫色ゾーン）は危険ゾーンです。";
                 
-                // 35度未満または37度以上の場合にポイントを赤く・大きくする
-                const tempColors = tempValues.map(v => (v !== null && (v < 35.0 || v >= 37.0)) ? '#dc3545' : '#2563eb');
-                const tempRadii = tempValues.map(v => (v !== null && (v < 35.0 || v >= 37.0)) ? 6 : 3);
+                const tempValues = chartRecords.map(r => parseFloat(r["体温"]) || null);
 
                 activeModalChart = new Chart(ctx, {
                     type: 'line',
@@ -418,9 +420,6 @@
                             data: tempValues,
                             borderColor: '#2563eb',
                             backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            pointBackgroundColor: tempColors,
-                            pointBorderColor: tempColors,
-                            pointRadius: tempRadii,
                             borderWidth: 2,
                             tension: 0.1,
                             spanGaps: true
@@ -430,12 +429,42 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         scales: {
-                            y: { suggestedMin: 35.5, suggestedMax: 38.0 }
+                            y: { 
+                                min: 34.0, 
+                                max: 39.0,
+                                ticks: { stepSize: 0.5 }
+                            }
+                        },
+                        plugins: {
+                            annotation: {
+                                annotations: {
+                                    // 37.0°C以上の危険ゾーン（上側）
+                                    dangerHigh: {
+                                        type: 'box',
+                                        yMin: 37.0,
+                                        yMax: 39.0,
+                                        backgroundColor: 'rgba(236, 72, 153, 0.15)', // 薄いピンク・紫系
+                                        borderColor: 'rgba(236, 72, 153, 0.3)',
+                                        borderWidth: 1
+                                    },
+                                    // 35.0°C以下の危険ゾーン（下側）
+                                    dangerLow: {
+                                        type: 'box',
+                                        yMin: 34.0,
+                                        yMax: 35.0,
+                                        backgroundColor: 'rgba(236, 72, 153, 0.15)', // 薄いピンク・紫系
+                                        borderColor: 'rgba(236, 72, 153, 0.3)',
+                                        borderWidth: 1
+                                    }
+                                }
+                            }
                         }
                     }
                 });
             } else if (type === 'time') {
                 modalTitle.innerText = `${name} さんの就寝・起床時間推移グラフ（直近1ヶ月）`;
+                modalSubDesc.innerText = ""; // 時間グラフには危険ゾーン説明は不要のため空欄
+                
                 const sleepValues = chartRecords.map(r => timeToDecimal(r["昨夜就寝時間"]));
                 const wakeValues = chartRecords.map(r => timeToDecimal(r["本日起床時間"]));
 
@@ -456,8 +485,8 @@
                             {
                                 label: '起床時間',
                                 data: wakeValues,
-                                borderColor: '#0284c7', // 明るい青・シアン系
-                                backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                                borderColor: '#16a34a', // 緑色
+                                backgroundColor: 'rgba(22, 163, 74, 0.1)',
                                 borderWidth: 2,
                                 tension: 0.1,
                                 spanGaps: true
