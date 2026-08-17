@@ -54,18 +54,37 @@
         .btn-success { background: #28a745; color: white; }
         .btn-secondary { background: #6c757d; color: white; }
         .btn-danger { background: #dc3545; color: white; }
+        .btn-indigo { background: #4f46e5; color: white; }
+        
         .status { margin-bottom: 10px; font-weight: bold; color: #333; min-height: 20px; }
         .page { display: none; }
         .page.active { display: block; }
         .table-container { overflow-x: auto; margin-bottom: 20px; }
         
-        /* グラフ用コンテナスタイル */
-        .charts-container { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 25px; }
-        @media (min-width: 768px) {
-            .charts-container { grid-template-columns: 1fr 1fr; }
+        /* モーダル（グラフ画面）スタイル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
         }
-        .chart-box { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .chart-box h4 { margin: 0 0 10px 0; font-size: 13px; color: #334155; text-align: center; }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 650px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
 
         /* 削除済み行のスタイル：グレー系の背景に黒（または濃いグレー）の文字色 */
         .row-deleted { background: #e2e8f0; color: #1e293b; }
@@ -133,6 +152,19 @@
         </div>
     </div>
 
+    <!-- グラフ表示用モーダル画面 -->
+    <div id="graph-modal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 id="modal-title" style="margin: 0; color: #334155;">グラフ表示</h3>
+                <button class="btn-secondary" onclick="closeGraphModal()" style="padding: 5px 12px; font-size: 12px;">✕ 閉じる</button>
+            </div>
+            <div style="position: relative; height: 320px; width: 100%;">
+                <canvas id="modal-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <script>
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
 
@@ -182,7 +214,7 @@
         let globalUserRecordsMap = {};
         let globalOriginalRecordsMap = {};
         const sortStates = {};
-        let chartInstances = {}; // グラフインスタンス保持用
+        let activeModalChart = null;
 
         async function showDetailsPage() {
             const selectedBtns = document.querySelectorAll('.select-btn.selected');
@@ -241,14 +273,6 @@
                 }
             });
 
-            // 既存のグラフインスタンスを破棄
-            for (let id in chartInstances) {
-                if (chartInstances[id]) {
-                    chartInstances[id].destroy();
-                }
-            }
-            chartInstances = {};
-
             const detailContent = document.getElementById('detail-content');
             detailContent.innerHTML = "";
             
@@ -258,34 +282,13 @@
                 if (records && records.length > 0) {
                     hasData = true;
 
-                    // グラフ描画用の時系列データ準備（古い順）
-                    const sortedForChart = [...records].sort((a, b) => {
-                        const vA = new Date(a["記録日"] || a["日付"] || 0).getTime();
-                        const vB = new Date(b["記録日"] || b["日付"] || 0).getTime();
-                        return vA - vB;
-                    });
-
-                    const chartLabels = sortedForChart.map(r => (r["記録日"] || r["日付"] || '').split(' ')[0]);
-                    const tempValues = sortedForChart.map(r => parseFloat(r["体温"]) || null);
-                    const sleepValues = sortedForChart.map(r => timeToDecimal(r["昨夜就寝時間"]));
-                    const wakeValues = sortedForChart.map(r => timeToDecimal(r["本日起床時間"]));
-
-                    const tempCanvasId = `chart-temp-${safeId(name)}`;
-                    const timeCanvasId = `chart-time-${safeId(name)}`;
-
                     let html = `<h3>${name} さんの記録</h3>`;
                     
-                    // グラフ描画エリア
+                    // 各項目の上に配置するグラフ表示ボタンエリア
                     html += `
-                        <div class="charts-container">
-                            <div class="chart-box">
-                                <h4>体温の推移 (°C)</h4>
-                                <canvas id="${tempCanvasId}"></canvas>
-                            </div>
-                            <div class="chart-box">
-                                <h4>就寝・起床時間の推移 (時)</h4>
-                                <canvas id="${timeCanvasId}"></canvas>
-                            </div>
+                        <div style="margin-bottom: 12px; display: flex; gap: 10px;">
+                            <button class="btn-danger" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'temp')">📈 体温グラフを表示</button>
+                            <button class="btn-indigo" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'time')">📈 就寝・起床時間グラフを表示</button>
                         </div>
                     `;
 
@@ -342,12 +345,6 @@
 
                     html += `</tbody></table></div>`;
                     detailContent.innerHTML += html;
-
-                    // 描画後にChart.jsでグラフを生成
-                    setTimeout(() => {
-                        createTempChart(tempCanvasId, chartLabels, tempValues);
-                        createTimeChart(timeCanvasId, chartLabels, sleepValues, wakeValues);
-                    }, 50);
                 }
             }
 
@@ -364,87 +361,110 @@
             });
         }
 
-        function safeId(str) {
-            return str.replace(/[^a-zA-Z0-9]/g, '_');
-        }
+        function openGraphModal(name, type) {
+            const records = globalUserRecordsMap[name];
+            if (!records || records.length === 0) return;
 
-        function createTempChart(canvasId, labels, data) {
-            const ctx = document.getElementById(canvasId);
-            if (!ctx) return;
-            chartInstances[canvasId] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '体温 (°C)',
-                        data: data,
-                        borderColor: '#dc3545',
-                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        spanGaps: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { 
-                            suggestedMin: 35.5, 
-                            suggestedMax: 38.0 
+            // 古い順にソート
+            const sorted = [...records].sort((a, b) => {
+                const vA = new Date(a["記録日"] || a["日付"] || 0).getTime();
+                const vB = new Date(b["記録日"] || b["日付"] || 0).getTime();
+                return vA - vB;
+            });
+
+            const labels = sorted.map(r => (r["記録日"] || r["日付"] || '').split(' ')[0]);
+            const modalTitle = document.getElementById('modal-title');
+            
+            if (activeModalChart) {
+                activeModalChart.destroy();
+            }
+
+            const ctx = document.getElementById('modal-chart').getContext('2d');
+
+            if (type === 'temp') {
+                modalTitle.innerText = `${name} さんの体温推移グラフ`;
+                const tempValues = sorted.map(r => parseFloat(r["体温"]) || null);
+
+                activeModalChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '体温 (°C)',
+                            data: tempValues,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            spanGaps: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { suggestedMin: 35.5, suggestedMax: 38.0 }
                         }
                     }
-                }
-            });
-        }
+                });
+            } else if (type === 'time') {
+                modalTitle.innerText = `${name} さんの就寝・起床時間推移グラフ`;
+                const sleepValues = sorted.map(r => timeToDecimal(r["昨夜就寝時間"]));
+                const wakeValues = sorted.map(r => timeToDecimal(r["本日起床時間"]));
 
-        function createTimeChart(canvasId, labels, sleepData, wakeData) {
-            const ctx = document.getElementById(canvasId);
-            if (!ctx) return;
-            chartInstances[canvasId] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: '就寝時間',
-                            data: sleepData,
-                            borderColor: '#4f46e5',
-                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.1,
-                            spanGaps: true
-                        },
-                        {
-                            label: '起床時間',
-                            data: wakeData,
-                            borderColor: '#2563eb',
-                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.1,
-                            spanGaps: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { 
-                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } 
+                activeModalChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: '就寝時間',
+                                data: sleepValues,
+                                borderColor: '#4f46e5',
+                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.1,
+                                spanGaps: true
+                            },
+                            {
+                                label: '起床時間',
+                                data: wakeValues,
+                                borderColor: '#2563eb',
+                                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.1,
+                                spanGaps: true
+                            }
+                        ]
                     },
-                    scales: {
-                        y: {
-                            min: 0,
-                            max: 24,
-                            ticks: {
-                                stepSize: 3,
-                                callback: function(value) {
-                                    return value + ':00';
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                min: 0,
+                                max: 24,
+                                ticks: {
+                                    stepSize: 3,
+                                    callback: function(value) {
+                                        return value + ':00';
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
+
+            document.getElementById('graph-modal').classList.add('active');
+        }
+
+        function closeGraphModal() {
+            document.getElementById('graph-modal').classList.remove('active');
+            if (activeModalChart) {
+                activeModalChart.destroy();
+                activeModalChart = null;
+            }
         }
 
         function sortTable(name, key, thEl) {
