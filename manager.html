@@ -407,9 +407,16 @@
 
             if (type === 'temp') {
                 modalTitle.innerText = `${name} さんの体温推移グラフ（直近1ヶ月）`;
-                modalSubDesc.innerText = "※ 35.0°C以下および37.0°C以上のエリア（上下の薄紫色ゾーン）は危険ゾーンです。";
+                modalSubDesc.innerText = "※ 35.0°C以下および37.0°C以上のエリア（上下の薄紫色ゾーン）は要注意ゾーンです。";
                 
                 const tempValues = chartRecords.map(r => parseFloat(r["体温"]) || null);
+                const validTemps = tempValues.filter(v => v !== null && !isNaN(v));
+                const dataMin = validTemps.length > 0 ? Math.min(...validTemps) : 36.0;
+                const dataMax = validTemps.length > 0 ? Math.max(...validTemps) : 37.0;
+
+                // データの最大値・最小値が欠けないようにしつつ、要注意ゾーン（35以下・37以上）も必ず包含する軸を計算
+                let yMin = Math.min(34.0, Math.floor(dataMin * 10) / 10 - 0.2);
+                let yMax = Math.max(39.0, Math.ceil(dataMax * 10) / 10 + 0.2);
 
                 activeModalChart = new Chart(ctx, {
                     type: 'line',
@@ -430,27 +437,27 @@
                         maintainAspectRatio: false,
                         scales: {
                             y: { 
-                                min: 34.0, 
-                                max: 39.0,
+                                min: yMin, 
+                                max: yMax,
                                 ticks: { stepSize: 0.5 }
                             }
                         },
                         plugins: {
                             annotation: {
                                 annotations: {
-                                    // 37.0°C以上の危険ゾーン（上側）
+                                    // 37.0°C以上の要注意ゾーン（上側）
                                     dangerHigh: {
                                         type: 'box',
                                         yMin: 37.0,
-                                        yMax: 39.0,
+                                        yMax: yMax,
                                         backgroundColor: 'rgba(236, 72, 153, 0.15)', // 薄いピンク・紫系
                                         borderColor: 'rgba(236, 72, 153, 0.3)',
                                         borderWidth: 1
                                     },
-                                    // 35.0°C以下の危険ゾーン（下側）
+                                    // 35.0°C以下の要注意ゾーン（下側）
                                     dangerLow: {
                                         type: 'box',
-                                        yMin: 34.0,
+                                        yMin: yMin,
                                         yMax: 35.0,
                                         backgroundColor: 'rgba(236, 72, 153, 0.15)', // 薄いピンク・紫系
                                         borderColor: 'rgba(236, 72, 153, 0.3)',
@@ -463,7 +470,7 @@
                 });
             } else if (type === 'time') {
                 modalTitle.innerText = `${name} さんの就寝・起床時間推移グラフ（直近1ヶ月）`;
-                modalSubDesc.innerText = ""; // 時間グラフには危険ゾーン説明は不要のため空欄
+                modalSubDesc.innerText = ""; // 時間グラフには不要のため空欄
                 
                 const sleepValues = chartRecords.map(r => timeToDecimal(r["昨夜就寝時間"]));
                 const wakeValues = chartRecords.map(r => timeToDecimal(r["本日起床時間"]));
