@@ -287,7 +287,6 @@
 
                     let html = `<h3>${name} さんの記録</h3>`;
                     
-                    // 各項目の上に配置するグラフ表示ボタンエリア
                     html += `
                         <div style="margin-bottom: 12px; display: flex; gap: 10px;">
                             <button class="btn-danger" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'temp')">📈 体温グラフを表示 (直近1ヶ月)</button>
@@ -328,7 +327,6 @@
                         const isDeletedRow = rec["ステータス"] && rec["ステータス"].startsWith("過去に削除済み");
                         const rowClass = isDeletedRow ? `class="row-deleted"` : "";
 
-                        // 体温の35度以下・37度以上の赤字判定
                         let tempValStr = rec["体温"];
                         let tempVal = parseFloat(tempValStr);
                         let tempStyle = "";
@@ -376,14 +374,12 @@
             const records = globalUserRecordsMap[name];
             if (!records || records.length === 0) return;
 
-            // 古い順にソート
             const sorted = [...records].sort((a, b) => {
                 const vA = new Date(a["記録日"] || a["日付"] || 0).getTime();
                 const vB = new Date(b["記録日"] || b["日付"] || 0).getTime();
                 return vA - vB;
             });
 
-            // 最大1ヶ月分（最新の日付から過去1ヶ月間）に絞り込み
             let chartRecords = sorted;
             if (sorted.length > 0) {
                 const latestDate = new Date(sorted[sorted.length - 1]["記録日"] || sorted[sorted.length - 1]["日付"]);
@@ -395,7 +391,6 @@
                 });
             }
 
-            // 日付を mm/dd 形式に変換（年は除外）
             const labels = chartRecords.map(r => {
                 const raw = (r["記録日"] || r["日付"] || '').split(' ')[0];
                 const parts = raw.split(/[-/]/);
@@ -498,7 +493,7 @@
                             {
                                 label: '起床時間',
                                 data: wakeValues,
-                                borderColor: '#16a34a', // 緑色
+                                borderColor: '#16a34a',
                                 backgroundColor: 'rgba(22, 163, 74, 0.1)',
                                 borderWidth: 2,
                                 tension: 0.1,
