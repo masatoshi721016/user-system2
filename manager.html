@@ -96,7 +96,6 @@
             const users = await res.json();
             const tbody = document.getElementById('user-tbody');
             
-            // 自動更新時にも現在選択されている行（name）を保持
             const selectedNames = Array.from(document.querySelectorAll('.select-btn.selected')).map(btn => btn.getAttribute('data-name'));
 
             tbody.innerHTML = '';
@@ -124,7 +123,6 @@
             document.getElementById('status-msg').innerText = isAuto ? "最新データを自動更新しました" : "最新データを読み込みました";
         }
 
-        // 行のボタンをクリックしたときの選択切替
         function toggleSelect(btn) {
             btn.classList.toggle('selected');
             if (btn.classList.contains('selected')) {
@@ -156,14 +154,15 @@
                 if (records && records.length > 0) {
                     hasData = true;
 
+                    // 降順（新しい日付が上：8/19, 8/16...）にソート
                     records.sort((a, b) => {
                         const dateA = new Date(a["記録日"] || a["日付"] || 0);
                         const dateB = new Date(b["記録日"] || b["日付"] || 0);
                         return dateB - dateA;
                     });
 
-                    const isDeleted = records.some(rec => rec["ステータス"] === "過去に削除済み");
-                    const deletedBadge = isDeleted ? `<span class="badge-deleted">過去に削除済み</span>` : "";
+                    const deletedRecord = records.find(rec => rec["ステータス"] && rec["ステータス"].startsWith("過去に削除済み"));
+                    const deletedBadge = deletedRecord ? `<span class="badge-deleted">${deletedRecord["ステータス"]}</span>` : "";
 
                     let html = `<h3>${name} さんの記録 ${deletedBadge}</h3>`;
                     html += `<div class="table-container"><table><thead><tr>`;
@@ -230,10 +229,8 @@
             loadUsers();
         }
 
-        // 初期読み込み
         loadUsers();
 
-        // 15秒ごとに一覧画面を自動更新（詳細画面を開いているときは更新をスキップ）
         setInterval(() => {
             if (document.getElementById('page-list').classList.contains('active')) {
                 loadUsers(true);
