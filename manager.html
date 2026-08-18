@@ -43,7 +43,7 @@
             font-size: 14px;
         }
         th, td {
-            padding: 6px 10px; /* 行の高さを半分程度に調整 */
+            padding: 6px 10px; /* 行の高さをコンパクトに調整 */
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
@@ -59,7 +59,7 @@
             flex-wrap: wrap;
         }
 
-        /* 選択/選択中ボタン（行の高さに合わせてコンパクト化） */
+        /* 選択/選択中ボタン（行の高さに合わせた正方形ボタン） */
         .select-toggle-btn {
             width: 32px;
             height: 32px;
@@ -132,6 +132,7 @@
 </div>
 
 <script>
+    // ※ご自身の正しいGASのウェブアプリURLを設定してください
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
 
     let usersData = [];
@@ -139,6 +140,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         loadUsers();
+        // 15秒ごとの自動更新
         setInterval(loadUsers, 15000);
     });
 
