@@ -158,11 +158,26 @@
         }
     }
 
-    // 日時文字列から「yyyy/mm/dd」の部分だけを抽出するヘルパー関数
+    // どんな形式の日付でも確実に「yyyy/mm/dd」に変換する安全な関数
     function formatDateOnly(dateStr) {
         if (!dateStr) return "";
-        // 例: "2026/08/18 13:11" のスペース前を取得
-        return dateStr.split(' ')[0];
+        dateStr = String(dateStr).trim();
+        
+        // スラッシュが含まれる形式（例: "2026/08/18 13:11"）の場合はスペースの前を抽出
+        if (dateStr.includes('/')) {
+            return dateStr.split(' ')[0];
+        }
+        
+        // 英語の曜日などが混ざった古い形式の場合はDateオブジェクトとしてパースして整形
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}/${m}/${day}`;
+        }
+        
+        return dateStr;
     }
 
     function renderTable() {
@@ -187,7 +202,6 @@
             btn.onclick = () => toggleSelect(u.name);
             tdBtn.appendChild(btn);
 
-            // 管理画面では日付（yyyy/mm/dd）のみ表示
             const displayDate = formatDateOnly(u.regDate);
 
             tr.innerHTML = `
