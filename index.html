@@ -29,7 +29,6 @@
         .page { display: none; }
         .page.active { display: block; }
         
-        /* スマホで押しやすい大きめのメニューボタン・丸文字風の視認性向上 */
         .menu-btn {
             display: block;
             width: 100%;
@@ -124,7 +123,7 @@
                 <h2>利用者ログイン</h2>
                 <p>4桁のPINコードを入力してください</p>
                 <div class="form-group" style="text-align: center;">
-                    <input type="password" id="login-pin" placeholder="••••" maxlength="4" inputmode="numeric" style="text-align: center; font-size: 28px; letter-spacing: 8px; font-weight: bold;">
+                    <input type="password" id="login-pin" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="new-password" style="text-align: center; font-size: 28px; letter-spacing: 8px; font-weight: bold;">
                 </div>
                 <button class="btn-primary" onclick="handleLogin()">ログイン</button>
             </div>
@@ -135,37 +134,31 @@
                 <p>お名前と4桁のPINコードを設定してください</p>
                 <div class="form-group">
                     <label>お名前</label>
-                    <input type="text" id="reg-name" placeholder="例：山田 太郎">
+                    <input type="text" id="reg-name" placeholder="例：山田 太郎" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label>4桁PINコード</label>
-                    <input type="password" id="reg-pin" placeholder="••••" maxlength="4" inputmode="numeric" style="text-align: center; font-size: 24px; letter-spacing: 6px; font-weight: bold;">
+                    <input type="password" id="reg-pin" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="new-password" style="text-align: center; font-size: 24px; letter-spacing: 6px; font-weight: bold;">
                 </div>
                 <button class="btn-primary" onclick="handleRegister()" style="background: #16a34a;">登録する</button>
             </div>
         </div>
     </div>
 
-    <!-- 2. メニュー選択ページ（3択：ご指定の順番・大きめボタン） -->
+    <!-- 2. メニュー選択ページ -->
     <div id="page-menu" class="page">
         <div class="card">
-            <!-- 本人確認用の挨拶表示エリア -->
             <div id="greeting-area" class="greeting-banner">こんにちは 〇〇さん！</div>
             
             <h2>メニュー選択</h2>
             <p>報告・記録する項目を選択してください</p>
             
-            <!-- 1. 当日勤怠報告 -->
             <button class="menu-btn btn-attendance" onclick="switchPage('page-attendance')">
                 📋 当日勤怠報告
             </button>
-            
-            <!-- 2. 体調管理 -->
             <button class="menu-btn btn-health" onclick="switchPage('page-health')">
                 🌡️ 体調管理
             </button>
-            
-            <!-- 3. 就労移行支援提供実績記録 -->
             <button class="menu-btn btn-record" onclick="switchPage('page-record')">
                 📝 就労移行支援提供実績記録
             </button>
@@ -181,7 +174,6 @@
         <div class="card" style="text-align: left;">
             <h2 style="text-align: left;">当日勤怠報告</h2>
             <p style="text-align: left;">本日の勤怠状況を入力してください。</p>
-            
             <div class="form-group">
                 <label>出勤状況</label>
                 <select id="att-status">
@@ -195,9 +187,7 @@
                 <label>備考・連絡事項</label>
                 <textarea id="att-note" placeholder="特になし"></textarea>
             </div>
-
             <button class="btn-primary" onclick="submitAttendance()">勤怠を送信する</button>
-
             <div style="margin-top: 20px;">
                 <button class="btn-secondary" onclick="switchPage('page-menu')">← メニューに戻る</button>
             </div>
@@ -209,7 +199,6 @@
         <div class="card" style="text-align: left;">
             <h2 style="text-align: left;">体調管理</h2>
             <p style="text-align: left;">本日の体調や体温を入力してください。</p>
-            
             <div class="form-group">
                 <label>体調</label>
                 <select id="h-condition">
@@ -218,12 +207,10 @@
                     <option value="✕">✕ (不調)</option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label>体温 (°C)</label>
                 <input type="number" step="0.1" id="h-temp" placeholder="36.5" inputmode="decimal">
             </div>
-
             <div class="form-group">
                 <label>服薬（今朝 / 昼 / 夕 / 就寝前）</label>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
@@ -233,7 +220,6 @@
                     <select id="h-med-n"><option value="〇">就寝:〇</option><option value="✕">就寝:✕</option><option value="／">就寝:/</option></select>
                 </div>
             </div>
-
             <div class="form-group">
                 <label>昨夜の就寝時間 / 本日起床時間</label>
                 <div style="display: flex; gap: 8px;">
@@ -241,14 +227,11 @@
                     <input type="time" id="h-wake" style="margin:0;">
                 </div>
             </div>
-
             <div class="form-group">
                 <label>特記事項</label>
                 <textarea id="h-note" placeholder="特になし"></textarea>
             </div>
-
             <button class="btn-primary" onclick="submitHealth()" style="background: #16a34a;">体調記録を送信する</button>
-
             <div style="margin-top: 20px;">
                 <button class="btn-secondary" onclick="switchPage('page-menu')">← メニューに戻る</button>
             </div>
@@ -260,14 +243,11 @@
         <div class="card" style="text-align: left;">
             <h2 style="text-align: left;">就労移行支援提供実績記録</h2>
             <p style="text-align: left;">本日の支援内容・実績を入力してください。</p>
-            
             <div class="form-group">
                 <label>利用プログラム・活動内容</label>
                 <textarea id="rec-content" placeholder="例：PC訓練、面談練習など"></textarea>
             </div>
-
             <button class="btn-primary" onclick="submitRecord()" style="background: #7c3aed;">実績記録を送信する</button>
-
             <div style="margin-top: 20px;">
                 <button class="btn-secondary" onclick="switchPage('page-menu')">← メニューに戻る</button>
             </div>
@@ -281,12 +261,23 @@
 
         let currentUser = null;
 
+        // ページ読み込み時に強制クリア
+        window.addEventListener('DOMContentLoaded', () => {
+            clearAuthInputs();
+        });
+
+        function clearAuthInputs() {
+            const loginPin = document.getElementById('login-pin');
+            const regPin = document.getElementById('reg-pin');
+            const regName = document.getElementById('reg-name');
+            if (loginPin) loginPin.value = "";
+            if (regPin) regPin.value = "";
+            if (regName) regName.value = "";
+        }
+
         // タブ切り替え（ログイン / 新規登録）
         function switchTab(tab) {
-            // タブ切り替え時もPIN入力欄を強制クリア
-            document.getElementById('login-pin').value = "";
-            document.getElementById('reg-pin').value = "";
-            document.getElementById('reg-name').value = "";
+            clearAuthInputs();
 
             if (tab === 'login') {
                 document.getElementById('tab-login').classList.add('active');
@@ -301,19 +292,17 @@
             }
         }
 
-        // ページ切り替え時に認証画面に戻った場合、PIN欄を強制的に空白にする
+        // ページ切り替え
         function switchPage(pageId) {
             if (pageId === 'page-auth') {
-                document.getElementById('login-pin').value = "";
-                document.getElementById('reg-pin').value = "";
-                document.getElementById('reg-name').value = "";
+                clearAuthInputs();
             }
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             window.scrollTo(0, 0);
         }
 
-        // ログイン処理（GASのユーザーシートと照合）
+        // ログイン処理
         async function handleLogin() {
             const pin = document.getElementById('login-pin').value.trim();
             if (!pin || pin.length !== 4) {
@@ -326,7 +315,6 @@
                 const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
                 const users = await res.json();
                 
-                // ユーザー検索（PIN一致かつ削除されていないユーザー）
                 const matchedUser = users.find(u => String(u.pin) === String(pin) && u.status !== "削除済み");
 
                 if (!matchedUser) {
@@ -337,7 +325,6 @@
 
                 currentUser = matchedUser.name;
 
-                // 時間帯別の挨拶を組み立てて表示
                 const hour = new Date().getHours();
                 let timeGreeting = "こんにちは";
                 if (hour >= 5 && hour < 12) {
@@ -348,8 +335,7 @@
 
                 document.getElementById('greeting-area').innerText = `${timeGreeting} ${currentUser}さん！`;
 
-                // ログイン成功後にPIN欄を強制クリアしてからメニュー画面へ
-                document.getElementById('login-pin').value = "";
+                clearAuthInputs();
                 switchPage('page-menu');
 
             } catch (e) {
@@ -388,8 +374,7 @@
                 }
 
                 alert("登録が完了しました。ログインタブからPINコードでログインしてください。");
-                document.getElementById('reg-name').value = "";
-                document.getElementById('reg-pin').value = "";
+                clearAuthInputs();
                 switchTab('login');
 
             } catch (e) {
@@ -401,11 +386,11 @@
         // ログアウト処理
         function logout() {
             currentUser = null;
-            document.getElementById('login-pin').value = "";
+            clearAuthInputs();
             switchPage('page-auth');
         }
 
-        // 各種送信処理（スタブ）
+        // 送信処理（スタブ）
         function submitAttendance() {
             alert("当日勤怠報告を送信しました。");
             switchPage('page-menu');
