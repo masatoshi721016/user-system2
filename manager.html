@@ -414,12 +414,18 @@
                 modalSubDesc.innerText = "※ 35.0°C以下および37.0°C以上のエリア（上下の薄紫色ゾーン）は要注意ゾーンです。";
                 
                 const tempValues = chartRecords.map(r => parseFloat(r["体温"]) || null);
+                
+                // 体温グラフの縦軸を35.0や37.0といった切りの良い数字で強制的に固定・制御
+                let yMin = 34.0;
+                let yMax = 39.0;
+                
                 const validTemps = tempValues.filter(v => v !== null && !isNaN(v));
-                const dataMin = validTemps.length > 0 ? Math.min(...validTemps) : 36.0;
-                const dataMax = validTemps.length > 0 ? Math.max(...validTemps) : 37.0;
-
-                let yMin = Math.min(34.0, Math.floor(dataMin * 10) / 10 - 0.2);
-                let yMax = Math.max(39.0, Math.ceil(dataMax * 10) / 10 + 0.2);
+                if (validTemps.length > 0) {
+                    const dataMin = Math.min(...validTemps);
+                    const dataMax = Math.max(...validTemps);
+                    if (dataMin < yMin) yMin = Math.floor(dataMin * 10) / 10;
+                    if (dataMax > yMax) yMax = Math.ceil(dataMax * 10) / 10;
+                }
 
                 activeModalChart = new Chart(ctx, {
                     type: 'line',
@@ -442,7 +448,12 @@
                             y: { 
                                 min: yMin, 
                                 max: yMax,
-                                ticks: { stepSize: 0.5 }
+                                ticks: { 
+                                    stepSize: 0.5,
+                                    callback: function(value) {
+                                        return value.toFixed(1) + '°C';
+                                    }
+                                }
                             }
                         },
                         plugins: {
