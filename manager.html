@@ -105,11 +105,10 @@
                             <th>名前</th>
                             <th>PIN</th>
                             <th>登録日時</th>
-                            <th>ステータス</th>
                         </tr>
                     </thead>
                     <tbody id="user-table-body">
-                        <tr><td colspan="5" style="text-align: center;">読み込み中...</td></tr>
+                        <tr><td colspan="4" style="text-align: center;">読み込み中...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -145,7 +144,6 @@
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             usersData = await res.json();
             
-            // 選択されていたが削除されたユーザーを記憶から除外
             const currentNames = new Set(usersData.map(u => u.name));
             for (let name of selectedNames) {
                 if (!currentNames.has(name)) {
@@ -156,8 +154,15 @@
             renderTable();
         } catch (e) {
             console.error(e);
-            document.getElementById('user-table-body').innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">データの取得に失敗しました。</td></tr>`;
+            document.getElementById('user-table-body').innerHTML = `<tr><td colspan="4" style="text-align: center; color: red;">データの取得に失敗しました。</td></tr>`;
         }
+    }
+
+    // 日時文字列から「yyyy/mm/dd」の部分だけを抽出するヘルパー関数
+    function formatDateOnly(dateStr) {
+        if (!dateStr) return "";
+        // 例: "2026/08/18 13:11" のスペース前を取得
+        return dateStr.split(' ')[0];
     }
 
     function renderTable() {
@@ -165,7 +170,7 @@
         tbody.innerHTML = "";
 
         if (!usersData || usersData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">登録ユーザーはいません。</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">登録ユーザーはいません。</td></tr>`;
             return;
         }
 
@@ -182,12 +187,14 @@
             btn.onclick = () => toggleSelect(u.name);
             tdBtn.appendChild(btn);
 
+            // 管理画面では日付（yyyy/mm/dd）のみ表示
+            const displayDate = formatDateOnly(u.regDate);
+
             tr.innerHTML = `
                 <td></td>
                 <td>${u.name}</td>
                 <td>${u.pin}</td>
-                <td>${u.regDate || ""}</td>
-                <td>${u.status || "有効"}</td>
+                <td>${displayDate}</td>
             `;
             tr.children[0].replaceWith(tdBtn);
             tbody.appendChild(tr);
@@ -221,13 +228,13 @@
         const selectedUsers = usersData.filter(u => selectedNames.has(u.name));
 
         selectedUsers.forEach(u => {
+            const displayDate = formatDateOnly(u.regDate);
             const div = document.createElement('div');
             div.style.cssText = "background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e2e8f0;";
             div.innerHTML = `
                 <h3 style="margin-top:0; color:#2563eb;">${u.name}</h3>
                 <p style="margin: 4px 0;"><strong>PINコード:</strong> ${u.pin}</p>
-                <p style="margin: 4px 0;"><strong>登録日時:</strong> ${u.regDate || "不明"}</p>
-                <p style="margin: 4px 0;"><strong>ステータス:</strong> ${u.status || "有効"}</p>
+                <p style="margin: 4px 0;"><strong>登録日時:</strong> ${displayDate}</p>
             `;
             detailContainer.appendChild(div);
         });
