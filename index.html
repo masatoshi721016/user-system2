@@ -12,15 +12,20 @@
             background: #f4f6f8; 
             margin: 0; 
             color: #333; 
-            font-size: 15px;
+            font-size: 16px;
+        }
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
         }
         .card { 
             background: white; 
-            padding: 20px 16px; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
-            margin-bottom: 15px; 
+            padding: 24px 20px; 
+            border-radius: 14px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            margin-bottom: 16px; 
             width: 100%;
+            text-align: center;
         }
         .page { display: none; }
         .page.active { display: block; }
@@ -29,15 +34,15 @@
         .menu-btn {
             display: block;
             width: 100%;
-            padding: 20px;
-            margin: 14px 0;
-            font-size: 17px;
+            padding: 22px;
+            margin: 16px 0;
+            font-size: 18px;
             font-weight: bold;
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
             text-align: center;
         }
         .menu-btn:active { transform: scale(0.98); }
@@ -75,73 +80,41 @@
             padding: 16px; 
             border: none; 
             border-radius: 8px; 
-            font-size: 17px; 
+            font-size: 18px; 
             font-weight: bold; 
             cursor: pointer; 
             margin-top: 10px;
         }
         
-        .tab-container { display: flex; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
-        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; font-weight: bold; color: #64748b; font-size: 15px; }
-        .tab.active { color: #2563eb; border-bottom: 3px solid #2563eb; margin-bottom: -2px; }
-        
-        .form-group { margin-bottom: 14px; text-align: left; }
+        .form-group { margin-bottom: 16px; text-align: left; }
         .form-group label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 6px; color: #475569; }
         
-        h2 { font-size: 20px; margin-top: 0; margin-bottom: 8px; }
+        h2 { font-size: 22px; margin-top: 0; margin-bottom: 10px; color: #1e293b; }
+        p { font-size: 14px; color: #64748b; margin-bottom: 20px; }
     </style>
 </head>
 <body>
+<div class="container">
 
-    <!-- 1. ログイン ＆ 新規登録ページ -->
-    <div id="page-auth" class="page active">
-        <div class="card" style="text-align: center;">
-            <div class="tab-container">
-                <div id="tab-login" class="tab active" onclick="switchTab('login')">ログイン</div>
-                <div id="tab-register" class="tab" onclick="switchTab('register')">新規登録</div>
+    <!-- 1. ログインページ（4PIN入力のみ） -->
+    <div id="page-login" class="page active">
+        <div class="card">
+            <h2>利用者ログイン</h2>
+            <p>4桁のPINコードを入力してください</p>
+            
+            <div class="form-group" style="text-align: center;">
+                <input type="password" id="login-pin" placeholder="••••" maxlength="4" inputmode="numeric" style="text-align: center; font-size: 28px; letter-spacing: 8px; font-weight: bold;">
             </div>
-
-            <!-- ログインフォーム（名前は手入力せず、登録者一覧から選択） -->
-            <div id="form-login">
-                <h2>利用者ログイン</h2>
-                <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">お名前を選んでPINコードを入力してください</p>
-                <div class="form-group">
-                    <label>お名前</label>
-                    <select id="login-name-select">
-                        <option value="">-- お名前を選択してください --</option>
-                        <!-- ユーザーが追加されると自動でここに入ります（サンプル） -->
-                        <option value="山田 太郎">山田 太郎</option>
-                        <option value="佐藤 花子">佐藤 花子</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>4桁PINコード</label>
-                    <input type="password" id="login-pin" placeholder="****" maxlength="4" inputmode="numeric">
-                </div>
-                <button class="btn-primary" onclick="handleLogin()">ログイン</button>
-            </div>
-
-            <!-- 新規登録フォーム -->
-            <div id="form-register" style="display: none;">
-                <h2>新規ユーザー登録</h2>
-                <div class="form-group">
-                    <label>お名前</label>
-                    <input type="text" id="reg-name" placeholder="お名前を入力">
-                </div>
-                <div class="form-group">
-                    <label>4桁PINコードを設定</label>
-                    <input type="password" id="reg-pin" placeholder="****" maxlength="4" inputmode="numeric">
-                </div>
-                <button class="btn-primary" onclick="handleRegister()" style="background: #16a34a;">登録する</button>
-            </div>
+            
+            <button class="btn-primary" onclick="handleLogin()">ログイン</button>
         </div>
     </div>
 
-    <!-- 2. メニュー選択ページ（3択・ご指定の順番） -->
+    <!-- 2. メニュー選択ページ（3択：ご指定の順番） -->
     <div id="page-menu" class="page">
-        <div class="card" style="text-align: center;">
+        <div class="card">
             <h2>メニュー選択</h2>
-            <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">報告・記録する項目を選択してください</p>
+            <p>報告・記録する項目を選択してください</p>
             
             <!-- 1. 当日勤怠報告 -->
             <button class="menu-btn btn-attendance" onclick="switchPage('page-attendance')">
@@ -166,9 +139,9 @@
 
     <!-- 3-1. 当日勤怠報告ページ -->
     <div id="page-attendance" class="page">
-        <div class="card">
+        <div class="card" style="text-align: left;">
             <h2>当日勤怠報告</h2>
-            <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">本日の勤怠状況を入力してください。</p>
+            <p>本日の勤怠状況を入力してください。</p>
             
             <div class="form-group">
                 <label>出勤状況</label>
@@ -194,9 +167,9 @@
 
     <!-- 3-2. 体調管理ページ -->
     <div id="page-health" class="page">
-        <div class="card">
+        <div class="card" style="text-align: left;">
             <h2>体調管理</h2>
-            <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">本日の体調や体温を入力してください。</p>
+            <p>本日の体調や体温を入力してください。</p>
             
             <div class="form-group">
                 <label>体調</label>
@@ -245,9 +218,9 @@
 
     <!-- 3-3. 就労移行支援提供実績記録ページ -->
     <div id="page-record" class="page">
-        <div class="card">
+        <div class="card" style="text-align: left;">
             <h2>就労移行支援提供実績記録</h2>
-            <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">本日の支援内容・実績を入力してください。</p>
+            <p>本日の支援内容・実績を入力してください。</p>
             
             <div class="form-group">
                 <label>利用プログラム・活動内容</label>
@@ -262,21 +235,9 @@
         </div>
     </div>
 
-    <script>
-        function switchTab(tab) {
-            if (tab === 'login') {
-                document.getElementById('tab-login').classList.add('active');
-                document.getElementById('tab-register').classList.remove('active');
-                document.getElementById('form-login').style.display = 'block';
-                document.getElementById('form-register').style.display = 'none';
-            } else {
-                document.getElementById('tab-register').classList.add('active');
-                document.getElementById('tab-login').classList.remove('active');
-                document.getElementById('form-register').style.display = 'block';
-                document.getElementById('form-login').style.display = 'none';
-            }
-        }
+</div>
 
+    <script>
         function switchPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
@@ -284,38 +245,18 @@
         }
 
         function handleLogin() {
-            const name = document.getElementById('login-name-select').value;
             const pin = document.getElementById('login-pin').value.trim();
-            if (!name) {
-                alert("お名前を選択してください。");
-                return;
-            }
             if (!pin || pin.length !== 4) {
                 alert("4桁のPINコードを入力してください。");
                 return;
             }
+            // ログイン成功後にメニュー画面へ遷移
             switchPage('page-menu');
         }
 
-        function handleRegister() {
-            const name = document.getElementById('reg-name').value.trim();
-            const pin = document.getElementById('reg-pin').value.trim();
-            if (!name) {
-                alert("お名前を入力してください。");
-                return;
-            }
-            if (!pin || pin.length !== 4) {
-                alert("4桁のPINコードを設定してください。");
-                return;
-            }
-            alert("登録が完了しました。ログイン画面からお進みください。");
-            switchTab('login');
-        }
-
         function logout() {
-            document.getElementById('login-name-select').value = "";
             document.getElementById('login-pin').value = "";
-            switchPage('page-auth');
+            switchPage('page-login');
         }
 
         function submitAttendance() {
