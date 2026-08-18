@@ -2,638 +2,191 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>管理画面</title>
-    <!-- Chart.jsの読み込み -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Chart.jsのAnnotation Pluginの読み込み（背景色付け用） -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者画面</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f4f6f8; font-size: 14px; max-width: 1100px; margin: 0 auto; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; white-space: nowrap; }
-        
-        /* ヘッダーおよびSVGソートアイコンのスタイル */
-        th { 
-            background: #f1f3f5; 
-            cursor: pointer; 
-            user-select: none; 
-            transition: background 0.2s;
-            position: relative;
-            padding-right: 28px;
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            padding: 20px; 
+            background: #f4f6f8; 
+            margin: 0; 
+            color: #333; 
         }
-        th:hover { background: #e2e8f0; }
-        th.no-sort { cursor: default; padding-right: 8px; }
-        th.no-sort:hover { background: #f1f3f5; }
-
-        /* デフォルトの上下矢印（薄いグレー） */
-        th::after { 
-            content: ""; 
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 12px;
-            height: 12px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8 9l4-4 4 4m0 6l-4 4-4-4'/%3E%3C/svg%3E");
-            background-size: contain;
-            background-repeat: no-repeat;
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+            margin-bottom: 20px; 
         }
-        th.no-sort::after { display: none; }
-
-        /* 昇順（上向き矢印を強調） */
-        th.asc::after { 
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563eb' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M5 15l7-7 7 7'/%3E%3C/svg%3E");
-        }
-
-        /* 降順（下向き矢印を強調） */
-        th.desc::after { 
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563eb' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-        }
-
-        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
-        .btn-primary { background: #007BFF; color: white; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-indigo { background: #7c3aed; color: white; }
-        
-        .status { margin-bottom: 10px; font-weight: bold; color: #333; min-height: 20px; }
-        .page { display: none; }
-        .page.active { display: block; }
-        .table-container { overflow-x: auto; margin-bottom: 20px; }
-        
-        /* モーダル（グラフ画面）スタイル */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 650px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        /* 削除済み行のスタイル：グレー系の背景に黒（または濃いグレー）の文字色 */
-        .row-deleted { background: #e2e8f0; color: #1e293b; }
-        .row-deleted td { border-color: #cbd5e1; }
-
-        .auto-refresh-notice { font-size: 12px; color: #666; margin-left: 10px; font-weight: normal; }
-        
-        .select-btn {
-            width: 36px;
-            height: 36px;
-            padding: 0;
-            border: 2px solid #cbd5e1;
-            border-radius: 6px;
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 11px;
+        h2 { margin-top: 0; color: #1e293b; font-size: 20px; }
+        .btn {
+            padding: 10px 16px;
+            font-size: 14px;
             font-weight: bold;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.1s;
-        }
-        .select-btn.selected {
-            background: #2563eb;
-            border-color: #1d4ed8;
             color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
         }
-        .select-btn:hover {
-            border-color: #94a3b8;
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-primary { background: #2563eb; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th { background: #f8fafc; color: #475569; font-weight: bold; }
+        tr.deleted { background: #f1f5f9; color: #94a3b8; text-decoration: line-through; }
+        
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
         }
     </style>
 </head>
 <body>
-    <div id="page-list" class="page active">
-        <div class="card">
-            <h2>登録者一覧管理 <span class="auto-refresh-notice">（※15秒ごとに自動更新されます）</span></h2>
-            <div class="status" id="status-msg"></div>
-            <div style="margin-bottom: 10px; display: flex; gap: 10px;">
-                <button class="btn-primary" onclick="loadUsers()">手動更新</button>
-                <button class="btn-success" onclick="showDetailsPage()">選択ユーザーの詳細表示</button>
-                <button class="btn-danger" onclick="deleteSelected()">選択項目を削除</button>
+<div class="container">
+    <div class="card">
+        <h2>利用者一覧・管理</h2>
+        <div class="toolbar">
+            <div>
+                <button class="btn btn-danger" onclick="confirmAndDelete()">選択項目を削除</button>
             </div>
+            <div>
+                <button class="btn btn-primary" onclick="loadUsers()">更新</button>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
             <table>
                 <thead>
                     <tr>
-                        <th class="no-sort" style="width: 50px;">選択</th>
+                        <th style="width: 40px;"><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)"></th>
                         <th>名前</th>
                         <th>PIN</th>
                         <th>登録日時</th>
+                        <th>ステータス</th>
                     </tr>
                 </thead>
-                <tbody id="user-tbody"></tbody>
+                <tbody id="user-table-body">
+                    <tr><td colspan="5" style="text-align: center;">読み込み中...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
+</div>
 
-    <div id="page-detail" class="page">
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2 style="margin: 0;">選択ユーザーの記録詳細</h2>
-                <button class="btn-secondary" onclick="backToList()">← 一覧に戻る</button>
-            </div>
-            <div id="detail-content"></div>
-        </div>
-    </div>
+<script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
 
-    <!-- グラフ表示用モーダル画面 -->
-    <div id="graph-modal" class="modal">
-        <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 id="modal-title" style="margin: 0; color: #334155;">グラフ表示（直近1ヶ月）</h3>
-                <button class="btn-secondary" onclick="closeGraphModal()" style="padding: 5px 12px; font-size: 12px;">✕ 閉じる</button>
-            </div>
-            <div id="modal-sub-desc" style="font-size: 11px; color: #dc3545; margin-bottom: 8px; font-weight: bold; min-height: 16px;"></div>
-            <div style="position: relative; height: 300px; width: 100%;">
-                <canvas id="modal-chart"></canvas>
-            </div>
-        </div>
-    </div>
+    // ページ読み込み時にユーザー一覧を取得
+    window.addEventListener('DOMContentLoaded', () => {
+        loadUsers();
+        // 15秒ごとの自動更新
+        setInterval(loadUsers, 15000);
+    });
 
-    <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
-
-        async function loadUsers(isAuto = false) {
-            if (!isAuto) {
-                document.getElementById('status-msg').innerText = "読み込み中...";
-            }
+    // ユーザー一覧の読み込み
+    async function loadUsers() {
+        try {
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             const users = await res.json();
-            const tbody = document.getElementById('user-tbody');
             
-            const selectedNames = Array.from(document.querySelectorAll('.select-btn.selected')).map(btn => btn.getAttribute('data-name'));
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = "";
 
-            tbody.innerHTML = '';
+            if (users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">登録ユーザーはいません。</td></tr>`;
+                return;
+            }
 
-            users.forEach(u => {
-                const isDeleted = (u.status === "削除済み");
-                const rowClass = isDeleted ? `class="row-deleted"` : "";
-                const isSelected = selectedNames.includes(u.name);
-                
-                const btnClass = isSelected ? "select-btn selected" : "select-btn";
-                const btnText = isSelected ? "選択中" : "選択";
+            users.forEach((u, index) => {
+                const tr = document.createElement('tr');
+                if (u.status === "削除済み") {
+                    tr.classList.add('deleted');
+                }
 
-                tbody.innerHTML += `
-                    <tr ${rowClass}>
-                        <td style="padding: 4px;">
-                            <button class="${btnClass}" data-row="${u.row}" data-name="${u.name}" onclick="toggleSelect(this)">${btnText}</button>
-                        </td>
-                        <td>${u.name}</td>
-                        <td>${u.pin}</td>
-                        <td>${u.date}</td>
-                    </tr>
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="user-checkbox" value="${u.name}" ${u.status === "削除済み" ? "disabled" : ""}></td>
+                    <td>${u.name}</td>
+                    <td>${u.pin}</td>
+                    <td>${u.regDate || ""}</td>
+                    <td>${u.status || "有効"}</td>
                 `;
+                tbody.appendChild(tr);
             });
-            document.getElementById('status-msg').innerText = isAuto ? "最新データを自動更新しました" : "最新データを読み込みました";
+        } catch (e) {
+            console.error(e);
+            document.getElementById('user-table-body').innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">データの取得に失敗しました。</td></tr>`;
+        }
+    }
+
+    // 全選択・全解除
+    function toggleSelectAll(master) {
+        const checkboxes = document.querySelectorAll('.user-checkbox:not(:disabled)');
+        checkboxes.forEach(cb => cb.checked = master.checked);
+    }
+
+    // 選択項目の削除確認と実行
+    async function confirmAndDelete() {
+        const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert("削除するユーザーを選択してください。");
+            return;
         }
 
-        function toggleSelect(btn) {
-            btn.classList.toggle('selected');
-            if (btn.classList.contains('selected')) {
-                btn.innerText = "選択中";
+        const selectedNames = Array.from(checkboxes).map(cb => cb.value);
+        
+        // ご要望の確認ポップアップ文言の動的生成
+        let confirmMsg = "";
+        if (selectedNames.length === 1) {
+            confirmMsg = `${selectedNames[0]}さんを削除しますがよろしいですか？`;
+        } else {
+            const last = selectedNames.pop();
+            confirmMsg = `${selectedNames.join('さんと')}さん、および${last}さんを削除しますがよろしいですか？`;
+            selectedNames.push(last); // 戻しておく
+        }
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        // 削除リクエストの送信
+        try {
+            const res = await fetch(GAS_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    action: 'delete_users',
+                    names: JSON.stringify(selectedNames)
+                })
+            });
+            const result = await res.json();
+
+            if (result.status === "success") {
+                alert("選択したユーザーを削除しました。");
+                loadUsers();
             } else {
-                btn.innerText = "選択";
+                alert("削除処理に失敗しました: " + (result.message || ""));
             }
+        } catch (e) {
+            console.error(e);
+            alert("サーバーとの通信に失敗しました。");
         }
-
-        let globalUserRecordsMap = {};
-        let globalOriginalRecordsMap = {};
-        const sortStates = {};
-        let activeModalChart = null;
-
-        async function showDetailsPage() {
-            const selectedBtns = document.querySelectorAll('.select-btn.selected');
-            if (selectedBtns.length === 0) {
-                document.getElementById('status-msg').innerText = "詳細を見るユーザーを1名以上選択してください";
-                return;
-            }
-            
-            const names = Array.from(selectedBtns).map(btn => btn.getAttribute('data-name')).join(',');
-            document.getElementById('status-msg').innerText = "詳細データを読み込み中...";
-            
-            const res = await fetch(`${GAS_URL}?action=getMultipleRecords&names=${encodeURIComponent(names)}&t=${new Date().getTime()}`);
-            globalUserRecordsMap = await res.json();
-            
-            globalOriginalRecordsMap = JSON.parse(JSON.stringify(globalUserRecordsMap));
-            
-            for (let name in globalUserRecordsMap) {
-                const records = globalUserRecordsMap[name];
-                if (records && records.length > 0) {
-                    records.sort((a, b) => {
-                        const valA = new Date(a["記録日"] || a["日付"] || 0).getTime();
-                        const valB = new Date(b["記録日"] || b["日付"] || 0).getTime();
-                        return valA - valB;
-                    });
-                    sortStates[name + "_日付"] = 'asc';
-                }
-            }
-
-            renderDetailTables();
-
-            document.getElementById('page-list').classList.remove('active');
-            document.getElementById('page-detail').classList.add('active');
-            document.getElementById('status-msg').innerText = "";
-        }
-
-        function timeToDecimal(timeStr) {
-            if (!timeStr || timeStr === '-' || typeof timeStr !== 'string') return null;
-            const parts = timeStr.trim().split(':');
-            if (parts.length >= 2) {
-                const h = parseInt(parts[0], 10);
-                const m = parseInt(parts[1], 10);
-                if (!isNaN(h) && !isNaN(m)) {
-                    return Math.round((h + m / 60) * 100) / 100;
-                }
-            }
-            return null;
-        }
-
-        function renderDetailTables() {
-            const scrollPositions = {};
-            document.querySelectorAll('#detail-content table').forEach(table => {
-                const name = table.getAttribute('data-username');
-                const container = table.closest('.table-container');
-                if (name && container) {
-                    scrollPositions[name] = container.scrollLeft;
-                }
-            });
-
-            const detailContent = document.getElementById('detail-content');
-            detailContent.innerHTML = "";
-            
-            let hasData = false;
-            for (let name in globalUserRecordsMap) {
-                const records = globalUserRecordsMap[name];
-                if (records && records.length > 0) {
-                    hasData = true;
-
-                    let html = `<h3>${name} さんの記録</h3>`;
-                    
-                    html += `
-                        <div style="margin-bottom: 12px; display: flex; gap: 10px;">
-                            <button class="btn-danger" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'temp')">📈 体温グラフを表示 (直近1ヶ月)</button>
-                            <button class="btn-indigo" style="font-size: 12px; padding: 6px 12px;" onclick="openGraphModal('${name}', 'time')">📈 就寝・起床時間グラフを表示 (直近1ヶ月)</button>
-                        </div>
-                    `;
-
-                    html += `<div class="table-container"><table data-username="${name}"><thead><tr>`;
-                    
-                    const columns = [
-                        { key: "日付", label: "日付" },
-                        { key: "体調", label: "体調" },
-                        { key: "服薬今朝", label: "服薬今朝" },
-                        { key: "服薬昨昼", label: "服薬昼" },
-                        { key: "服薬昨夕", label: "服薬夕" },
-                        { key: "服薬就寝前", label: "服薬就寝前" },
-                        { key: "食事今朝", label: "食事今朝" },
-                        { key: "食事昨昼", label: "食事昼" },
-                        { key: "食事昨夕", label: "食事夕" },
-                        { key: "昨夜就寝時間", label: "昨夜就寝時間" },
-                        { key: "本日起床時間", label: "本日起床時間" },
-                        { key: "体温", label: "体温" },
-                        { key: "特記事項", label: "特記事項" },
-                        { key: "更新日時", label: "登録日時(更新)" }
-                    ];
-
-                    columns.forEach(col => {
-                        const stateKey = name + "_" + col.key;
-                        const currentSortClass = sortStates[stateKey] || '';
-                        html += `<th class="${currentSortClass}" onclick="sortTable('${name}', '${col.key}', this)">${col.label}</th>`;
-                    });
-
-                    html += `</tr></thead><tbody>`;
-
-                    records.forEach(rec => {
-                        let rawDate = rec["記録日"] || rec["日付"] || '-';
-                        let dateOnly = rawDate.split(' ')[0];
-                        const isDeletedRow = rec["ステータス"] && rec["ステータス"].startsWith("過去に削除済み");
-                        const rowClass = isDeletedRow ? `class="row-deleted"` : "";
-
-                        let tempValStr = rec["体温"];
-                        let tempVal = parseFloat(tempValStr);
-                        let tempStyle = "";
-                        if (!isNaN(tempVal) && (tempVal < 35.0 || tempVal >= 37.0)) {
-                            tempStyle = 'style="color: #dc3545; font-weight: bold;"';
-                        }
-
-                        html += `<tr ${rowClass}>`;
-                        html += `<td><b>${dateOnly}</b></td>`;
-                        html += `<td>${rec["体調"] || '-'}</td>`;
-                        html += `<td>${rec["服薬今朝"] || '-'}</td>`;
-                        html += `<td>${rec["服薬昨昼"] || '-'}</td>`;
-                        html += `<td>${rec["服薬昨夕"] || '-'}</td>`;
-                        html += `<td>${rec["服薬就寝前"] || '-'}</td>`;
-                        html += `<td>${rec["食事今朝"] || '-'}</td>`;
-                        html += `<td>${rec["食事昨昼"] || '-'}</td>`;
-                        html += `<td>${rec["食事昨夕"] || '-'}</td>`;
-                        html += `<td>${rec["昨夜就寝時間"] || '-'}</td>`;
-                        html += `<td>${rec["本日起床時間"] || '-'}</td>`;
-                        html += `<td ${tempStyle}>${tempValStr || '-'}</td>`;
-                        html += `<td style="text-align:left; max-width:150px; overflow:hidden; text-overflow:ellipsis;">${rec["特記事項"] || '-'}</td>`;
-                        html += `<td>${rec["更新日時"] || '-'}</td>`;
-                        html += `</tr>`;
-                    });
-
-                    html += `</tbody></table></div>`;
-                    detailContent.innerHTML += html;
-                }
-            }
-
-            if (!hasData) {
-                detailContent.innerHTML = "<p>選択されたユーザーの記録データがまだありません。</p>";
-            }
-
-            document.querySelectorAll('#detail-content table').forEach(table => {
-                const name = table.getAttribute('data-username');
-                const container = table.closest('.table-container');
-                if (name && container && scrollPositions[name] !== undefined) {
-                    container.scrollLeft = scrollPositions[name];
-                }
-            });
-        }
-
-        function openGraphModal(name, type) {
-            const records = globalUserRecordsMap[name];
-            if (!records || records.length === 0) return;
-
-            const sorted = [...records].sort((a, b) => {
-                const vA = new Date(a["記録日"] || a["日付"] || 0).getTime();
-                const vB = new Date(b["記録日"] || b["日付"] || 0).getTime();
-                return vA - vB;
-            });
-
-            let chartRecords = sorted;
-            if (sorted.length > 0) {
-                const latestDate = new Date(sorted[sorted.length - 1]["記録日"] || sorted[sorted.length - 1]["日付"]);
-                const oneMonthAgo = new Date(latestDate);
-                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-                chartRecords = sorted.filter(r => {
-                    const d = new Date(r["記録日"] || r["日付"]);
-                    return d >= oneMonthAgo;
-                });
-            }
-
-            const labels = chartRecords.map(r => {
-                const raw = (r["記録日"] || r["日付"] || '').split(' ')[0];
-                const parts = raw.split(/[-/]/);
-                if (parts.length >= 3) {
-                    return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
-                }
-                return raw;
-            });
-
-            const modalTitle = document.getElementById('modal-title');
-            const modalSubDesc = document.getElementById('modal-sub-desc');
-            
-            if (activeModalChart) {
-                activeModalChart.destroy();
-            }
-
-            const ctx = document.getElementById('modal-chart').getContext('2d');
-
-            if (type === 'temp') {
-                modalTitle.innerText = `${name} さんの体温推移グラフ（直近1ヶ月）`;
-                modalSubDesc.innerText = "※ 35.0°C以下および37.0°C以上のエリア（上下の薄紫色ゾーン）は要注意ゾーンです。";
-                
-                const tempValues = chartRecords.map(r => parseFloat(r["体温"]) || null);
-                
-                // 体温グラフの縦軸を35.0や37.0といった切りの良い数字で強制的に固定・制御
-                let yMin = 34.0;
-                let yMax = 39.0;
-                
-                const validTemps = tempValues.filter(v => v !== null && !isNaN(v));
-                if (validTemps.length > 0) {
-                    const dataMin = Math.min(...validTemps);
-                    const dataMax = Math.max(...validTemps);
-                    if (dataMin < yMin) yMin = Math.floor(dataMin * 10) / 10;
-                    if (dataMax > yMax) yMax = Math.ceil(dataMax * 10) / 10;
-                }
-
-                activeModalChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: '体温 (°C)',
-                            data: tempValues,
-                            borderColor: '#2563eb',
-                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.1,
-                            spanGaps: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { 
-                                min: yMin, 
-                                max: yMax,
-                                ticks: { 
-                                    stepSize: 0.5,
-                                    callback: function(value) {
-                                        return value.toFixed(1) + '°C';
-                                    }
-                                }
-                            }
-                        },
-                        plugins: {
-                            annotation: {
-                                annotations: {
-                                    dangerHigh: {
-                                        type: 'box',
-                                        yMin: 37.0,
-                                        yMax: yMax,
-                                        backgroundColor: 'rgba(236, 72, 153, 0.15)',
-                                        borderColor: 'rgba(236, 72, 153, 0.3)',
-                                        borderWidth: 1
-                                    },
-                                    dangerLow: {
-                                        type: 'box',
-                                        yMin: yMin,
-                                        yMax: 35.0,
-                                        backgroundColor: 'rgba(236, 72, 153, 0.15)',
-                                        borderColor: 'rgba(236, 72, 153, 0.3)',
-                                        borderWidth: 1
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            } else if (type === 'time') {
-                modalTitle.innerText = `${name} さんの就寝・起床時間推移グラフ（直近1ヶ月）`;
-                modalSubDesc.innerText = "";
-                
-                const sleepValues = chartRecords.map(r => timeToDecimal(r["昨夜就寝時間"]));
-                const wakeValues = chartRecords.map(r => timeToDecimal(r["本日起床時間"]));
-
-                activeModalChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: '就寝時間',
-                                data: sleepValues,
-                                borderColor: '#7c3aed',
-                                backgroundColor: 'rgba(124, 58, 237, 0.1)',
-                                borderWidth: 2,
-                                tension: 0.1,
-                                spanGaps: true
-                            },
-                            {
-                                label: '起床時間',
-                                data: wakeValues,
-                                borderColor: '#16a34a',
-                                backgroundColor: 'rgba(22, 163, 74, 0.1)',
-                                borderWidth: 2,
-                                tension: 0.1,
-                                spanGaps: true
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { 
-                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } 
-                        },
-                        scales: {
-                            y: {
-                                min: 0,
-                                max: 24,
-                                ticks: {
-                                    stepSize: 3,
-                                    callback: function(value) {
-                                        return value + ':00';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            document.getElementById('graph-modal').classList.add('active');
-        }
-
-        function closeGraphModal() {
-            document.getElementById('graph-modal').classList.remove('active');
-            if (activeModalChart) {
-                activeModalChart.destroy();
-                activeModalChart = null;
-            }
-        }
-
-        function sortTable(name, key, thEl) {
-            const records = globalUserRecordsMap[name];
-            if (!records) return;
-
-            const stateKey = name + "_" + key;
-            const currentDir = sortStates[stateKey] || 'none';
-            
-            let nextDir;
-            if (currentDir === 'none') {
-                nextDir = 'asc';
-            } else if (currentDir === 'asc') {
-                nextDir = 'desc';
-            } else {
-                nextDir = 'none';
-            }
-            
-            const columns = ["日付", "体調", "服薬今朝", "服薬昨昼", "服薬昨夕", "服薬就寝前", "食事今朝", "食事昨昼", "食事昨夕", "昨夜就寝時間", "本日起床時間", "体温", "特記事項", "更新日時"];
-            columns.forEach(c => { delete sortStates[name + "_" + c]; });
-
-            if (nextDir === 'none') {
-                globalUserRecordsMap[name] = JSON.parse(JSON.stringify(globalOriginalRecordsMap[name]));
-                delete sortStates[stateKey];
-            } else {
-                sortStates[stateKey] = nextDir;
-
-                const healthOrder = { "〇": 1, "△": 2, "✕": 3, "-": 4 };
-                const medOrder = { "〇": 1, "／": 2, "✕": 3, "-": 4 };
-
-                records.sort((a, b) => {
-                    let valA = a[key === "日付" ? ("記録日" in a ? "記録日" : "日付") : key] || "";
-                    let valB = b[key === "日付" ? ("記録日" in b ? "記録日" : "日付") : key] || "";
-
-                    if (key === "体調") {
-                        valA = healthOrder[valA.trim()] || 99;
-                        valB = healthOrder[valB.trim()] || 99;
-                    } else if (key.includes("服薬") || key.includes("食事")) {
-                        valA = medOrder[valA.trim()] || 99;
-                        valB = medOrder[valB.trim()] || 99;
-                    } else if (key === "日付" || key === "更新日時") {
-                        valA = new Date(valA).getTime() || 0;
-                        valB = new Date(valB).getTime() || 0;
-                    } else if (key === "体温") {
-                        valA = parseFloat(valA) || 0;
-                        valB = parseFloat(valB) || 0;
-                    } else {
-                        valA = String(valA);
-                        valB = String(valB);
-                    }
-
-                    if (valA < valB) return nextDir === 'asc' ? -1 : 1;
-                    if (valA > valB) return nextDir === 'asc' ? 1 : -1;
-                    return 0;
-                });
-            }
-
-            renderDetailTables();
-        }
-
-        function backToList() {
-            document.getElementById('page-detail').classList.remove('active');
-            document.getElementById('page-list').classList.add('active');
-        }
-
-        async function deleteSelected() {
-            const selectedBtns = document.querySelectorAll('.select-btn.selected');
-            if (selectedBtns.length === 0) {
-                document.getElementById('status-msg').innerText = "削除する項目が選択されていません";
-                return;
-            }
-
-            const rows = Array.from(selectedBtns).map(btn => parseInt(btn.getAttribute('data-row')));
-            document.getElementById('status-msg').innerText = "削除処理中...";
-
-            await fetch(GAS_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'delete', rows: rows }) 
-            });
-
-            document.getElementById('status-msg').innerText = "選択項目を削除しました";
-            loadUsers();
-        }
-
-        loadUsers();
-
-        setInterval(() => {
-            if (document.getElementById('page-list').classList.contains('active')) {
-                loadUsers(true);
-            }
-        }, 15000);
-    </script>
+    }
+</script>
 </body>
 </html>
