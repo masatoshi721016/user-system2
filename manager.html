@@ -43,13 +43,12 @@
             font-size: 14px;
         }
         th, td {
-            padding: 6px 10px; /* 行の高さをコンパクトに調整 */
+            padding: 6px 10px;
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
         }
         th { background: #f8fafc; color: #475569; font-weight: bold; }
-        tr.deleted { background: #f1f5f9; color: #94a3b8; text-decoration: line-through; }
         
         .toolbar {
             display: flex;
@@ -59,7 +58,6 @@
             flex-wrap: wrap;
         }
 
-        /* 選択/選択中ボタン（行の高さに合わせた正方形ボタン） */
         .select-toggle-btn {
             width: 32px;
             height: 32px;
@@ -132,7 +130,6 @@
 </div>
 
 <script>
-    // ※ご自身の正しいGASのウェブアプリURLを設定してください
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
 
     let usersData = [];
@@ -140,7 +137,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         loadUsers();
-        // 15秒ごとの自動更新
         setInterval(loadUsers, 15000);
     });
 
@@ -148,6 +144,15 @@
         try {
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             usersData = await res.json();
+            
+            // 選択されていたが削除されたユーザーを記憶から除外
+            const currentNames = new Set(usersData.map(u => u.name));
+            for (let name of selectedNames) {
+                if (!currentNames.has(name)) {
+                    selectedNames.delete(name);
+                }
+            }
+
             renderTable();
         } catch (e) {
             console.error(e);
@@ -166,25 +171,16 @@
 
         usersData.forEach((u) => {
             const isSelected = selectedNames.has(u.name);
-            const isDeleted = (u.status === "削除済み");
 
             const tr = document.createElement('tr');
-            if (isDeleted) {
-                tr.classList.add('deleted');
-            }
-
             const tdBtn = document.createElement('td');
             tdBtn.style.textAlign = "center";
 
-            if (!isDeleted) {
-                const btn = document.createElement('button');
-                btn.className = `select-toggle-btn ${isSelected ? 'selected' : ''}`;
-                btn.innerText = isSelected ? '選択中' : '選択';
-                btn.onclick = () => toggleSelect(u.name);
-                tdBtn.appendChild(btn);
-            } else {
-                tdBtn.innerText = "-";
-            }
+            const btn = document.createElement('button');
+            btn.className = `select-toggle-btn ${isSelected ? 'selected' : ''}`;
+            btn.innerText = isSelected ? '選択中' : '選択';
+            btn.onclick = () => toggleSelect(u.name);
+            tdBtn.appendChild(btn);
 
             tr.innerHTML = `
                 <td></td>
