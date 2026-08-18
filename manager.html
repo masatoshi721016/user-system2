@@ -58,6 +58,13 @@
             flex-wrap: wrap;
         }
 
+        .selection-count {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-left: auto; /* 右側に配置 */
+        }
+
         .select-toggle-btn {
             width: 32px;
             height: 32px;
@@ -92,9 +99,10 @@
         <div class="card">
             <h2>利用者一覧・管理</h2>
             <div class="toolbar">
-                <button id="refresh-btn" class="btn btn-secondary" onclick="manualLoadUsers()">手動更新</button>
+                <button class="btn btn-secondary" onclick="manualLoadUsers()">手動更新</button>
                 <button class="btn btn-primary" onclick="goToDetail()">選択詳細</button>
                 <button class="btn btn-danger" onclick="confirmAndDelete()">選択削除</button>
+                <span id="selection-count" class="selection-count">選択中: 0件</span>
             </div>
 
             <div style="overflow-x: auto;">
@@ -187,9 +195,15 @@
         return dateStr;
     }
 
+    function updateSelectionCount() {
+        document.getElementById('selection-count').innerText = `選択中: ${selectedNames.size}件`;
+    }
+
     function renderTable() {
         const tbody = document.getElementById('user-table-body');
         tbody.innerHTML = "";
+
+        updateSelectionCount();
 
         if (!usersData || usersData.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">登録ユーザーはいません。</td></tr>`;
@@ -239,7 +253,7 @@
 
     function goToDetail() {
         if (selectedNames.size === 0) {
-            alert("詳細を表示するユーザーを「選択」ボタンで選んでから押してください。");
+            alert("詳細を表示したいユーザーを「選択」ボタンで1件以上選んでから押してください。");
             return;
         }
 
