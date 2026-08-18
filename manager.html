@@ -34,6 +34,7 @@
         .btn-danger { background: #dc2626; }
         .btn-danger:hover { background: #b91c1c; }
         .btn-primary { background: #2563eb; }
+        .btn-secondary { background: #64748b; }
         
         table {
             width: 100%;
@@ -45,139 +46,236 @@
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
         }
         th { background: #f8fafc; color: #475569; font-weight: bold; }
         tr.deleted { background: #f1f5f9; color: #94a3b8; text-decoration: line-through; }
         
         .toolbar {
             display: flex;
-            justify-content: space-between;
+            gap: 10px;
             align-items: center;
             margin-bottom: 12px;
+            flex-wrap: wrap;
         }
+
+        /* 正方形で枠いっぱいの「選択/選択中」ボタン */
+        .select-toggle-btn {
+            width: 44px;
+            height: 44px;
+            border: 2px solid #cbd5e1;
+            background: #fff;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0 auto;
+        }
+        .select-toggle-btn.selected {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: white;
+        }
+
+        .page { display: none; }
+        .page.active { display: block; }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="card">
-        <h2>利用者一覧・管理</h2>
-        <div class="toolbar">
-            <div>
-                <button class="btn btn-danger" onclick="confirmAndDelete()">選択項目を削除</button>
-            </div>
-            <div>
-                <button class="btn btn-primary" onclick="loadUsers()">更新</button>
-            </div>
-        </div>
 
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 40px;"><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)"></th>
-                        <th>名前</th>
-                        <th>PIN</th>
-                        <th>登録日時</th>
-                        <th>ステータス</th>
-                    </tr>
-                </thead>
-                <tbody id="user-table-body">
-                    <tr><td colspan="5" style="text-align: center;">読み込み中...</td></tr>
-                </tbody>
-            </table>
+    <!-- 一覧画面 -->
+    <div id="page-list" class="page active">
+        <div class="card">
+            <h2>利用者一覧・管理</h2>
+            <div class="toolbar">
+                <button class="btn btn-secondary" onclick="loadUsers()">手動更新</button>
+                <button class="btn btn-primary" onclick="goToDetail()">選択詳細</button>
+                <button class="btn btn-danger" onclick="confirmAndDelete()">選択削除</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 70px; text-align: center;">選択</th>
+                            <th>名前</th>
+                            <th>PIN</th>
+                            <th>登録日時</th>
+                            <th>ステータス</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body">
+                        <tr><td colspan="5" style="text-align: center;">読み込み中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
+    <!-- 詳細画面 -->
+    <div id="page-detail" class="page">
+        <div class="card">
+            <h2>選択ユーザー詳細</h2>
+            <div id="detail-content">
+                <!-- 選択されたユーザーの情報がここに表示される -->
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="switchPage('page-list')">← 一覧に戻る</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
 
-    // ページ読み込み時にユーザー一覧を取得
+    let usersData = [];
+    let selectedNames = new Set(); // 選択されているユーザー名を保持
+
     window.addEventListener('DOMContentLoaded', () => {
         loadUsers();
         // 15秒ごとの自動更新
         setInterval(loadUsers, 15000);
     });
 
-    // ユーザー一覧の読み込み
     async function loadUsers() {
         try {
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
-            const users = await res.json();
-            
-            const tbody = document.getElementById('user-table-body');
-            tbody.innerHTML = "";
-
-            if (users.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">登録ユーザーはいません。</td></tr>`;
-                return;
-            }
-
-            users.forEach((u, index) => {
-                const tr = document.createElement('tr');
-                if (u.status === "削除済み") {
-                    tr.classList.add('deleted');
-                }
-
-                tr.innerHTML = `
-                    <td><input type="checkbox" class="user-checkbox" value="${u.name}" ${u.status === "削除済み" ? "disabled" : ""}></td>
-                    <td>${u.name}</td>
-                    <td>${u.pin}</td>
-                    <td>${u.regDate || ""}</td>
-                    <td>${u.status || "有効"}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+            usersData = await res.json();
+            renderTable();
         } catch (e) {
             console.error(e);
             document.getElementById('user-table-body').innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">データの取得に失敗しました。</td></tr>`;
         }
     }
 
-    // 全選択・全解除
-    function toggleSelectAll(master) {
-        const checkboxes = document.querySelectorAll('.user-checkbox:not(:disabled)');
-        checkboxes.forEach(cb => cb.checked = master.checked);
+    function renderTable() {
+        const tbody = document.getElementById('user-table-body');
+        tbody.innerHTML = "";
+
+        if (!usersData || usersData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">登録ユーザーはいません。</td></tr>`;
+            return;
+        }
+
+        usersData.forEach((u) => {
+            const isSelected = selectedNames.has(u.name);
+            const isDeleted = (u.status === "削除済み");
+
+            const tr = document.createElement('tr');
+            if (isDeleted) {
+                tr.classList.add('deleted');
+            }
+
+            const tdBtn = document.createElement('td');
+            tdBtn.style.textAlign = "center";
+
+            if (!isDeleted) {
+                const btn = document.createElement('button');
+                btn.className = `select-toggle-btn ${isSelected ? 'selected' : ''}`;
+                btn.innerText = isSelected ? '選択中' : '選択';
+                btn.onclick = () => toggleSelect(u.name);
+                tdBtn.appendChild(btn);
+            } else {
+                tdBtn.innerText = "-";
+            }
+
+            tr.innerHTML = `
+                <td></td>
+                <td>${u.name}</td>
+                <td>${u.pin}</td>
+                <td>${u.regDate || ""}</td>
+                <td>${u.status || "有効"}</td>
+            `;
+            tr.children[0].replaceWith(tdBtn);
+            tbody.appendChild(tr);
+        });
     }
 
-    // 選択項目の削除確認と実行
+    function toggleSelect(name) {
+        if (selectedNames.has(name)) {
+            selectedNames.delete(name);
+        } else {
+            selectedNames.add(name);
+        }
+        renderTable();
+    }
+
+    function switchPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    // 選択詳細へ遷移
+    function goToDetail() {
+        if (selectedNames.size === 0) {
+            alert("詳細を表示するユーザーを選択してください。");
+            return;
+        }
+
+        const detailContainer = document.getElementById('detail-content');
+        detailContainer.innerHTML = "";
+
+        const selectedUsers = usersData.filter(u => selectedNames.has(u.name));
+
+        selectedUsers.forEach(u => {
+            const div = document.createElement('div');
+            div.style.cssText = "background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e2e8f0;";
+            div.innerHTML = `
+                <h3 style="margin-top:0; color:#2563eb;">${u.name}</h3>
+                <p style="margin: 4px 0;"><strong>PINコード:</strong> ${u.pin}</p>
+                <p style="margin: 4px 0;"><strong>登録日時:</strong> ${u.regDate || "不明"}</p>
+                <p style="margin: 4px 0;"><strong>ステータス:</strong> ${u.status || "有効"}</p>
+            `;
+            detailContainer.appendChild(div);
+        });
+
+        switchPage('page-detail');
+    }
+
+    // 選択削除の確認と実行
     async function confirmAndDelete() {
-        const checkboxes = document.querySelectorAll('.user-checkbox:checked');
-        if (checkboxes.length === 0) {
+        if (selectedNames.size === 0) {
             alert("削除するユーザーを選択してください。");
             return;
         }
 
-        const selectedNames = Array.from(checkboxes).map(cb => cb.value);
-        
-        // ご要望の確認ポップアップ文言の動的生成
+        const namesArr = Array.from(selectedNames);
         let confirmMsg = "";
-        if (selectedNames.length === 1) {
-            confirmMsg = `${selectedNames[0]}さんを削除しますがよろしいですか？`;
+        if (namesArr.length === 1) {
+            confirmMsg = `${namesArr[0]}さんを削除しますがよろしいですか？`;
         } else {
-            const last = selectedNames.pop();
-            confirmMsg = `${selectedNames.join('さんと')}さん、および${last}さんを削除しますがよろしいですか？`;
-            selectedNames.push(last); // 戻しておく
+            const last = namesArr.pop();
+            confirmMsg = `${namesArr.join('さんと')}さん、および${last}さんを削除しますがよろしいですか？`;
+            namesArr.push(last);
         }
 
         if (!confirm(confirmMsg)) {
             return;
         }
 
-        // 削除リクエストの送信
         try {
             const res = await fetch(GAS_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({
                     action: 'delete_users',
-                    names: JSON.stringify(selectedNames)
+                    names: JSON.stringify(namesArr)
                 })
             });
             const result = await res.json();
 
             if (result.status === "success") {
                 alert("選択したユーザーを削除しました。");
+                selectedNames.clear();
                 loadUsers();
             } else {
                 alert("削除処理に失敗しました: " + (result.message || ""));
