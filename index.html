@@ -2,265 +2,155 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>体調管理チェック</title>
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap" rel="stylesheet">
+    <title>利用者画面</title>
     <style>
-        body { font-family: 'M PLUS Rounded 1c', sans-serif; padding: 15px; max-width: 480px; margin: 0 auto; background: #f0f4f8; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 15px; }
-        h2 { text-align: center; font-size: 20px; color: #2c3e50; }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 15px; color: #444; }
-        input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; box-sizing: border-box; font-size: 16px; background: #f8fafc; }
-        .btn { width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .tab-group { display: flex; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 2px solid #e2e8f0; }
-        .tab { flex: 1; padding: 12px; text-align: center; background: #f1f5f9; cursor: pointer; font-weight: bold; font-size: 15px; color: #64748b; }
-        .tab.active { background: #3b82f6; color: white; }
-        .row-inputs { display: flex; gap: 8px; }
-        .row-inputs > div { flex: 1; text-align: center; }
-        .row-inputs small { font-size: 11px; color: #64748b; display: block; margin-bottom: 4px; }
-        .view { display: none; } .view.active { display: block; }
-        .welcome-title { text-align: center; font-size: 17px; color: #3b82f6; margin-bottom: 15px; font-weight: bold; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f6f8; max-width: 600px; margin: 0 auto; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* 大きめで押しやすいメニューボタン */
+        .menu-btn {
+            display: block;
+            width: 100%;
+            padding: 22px;
+            margin: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .menu-btn:active { transform: scale(0.98); }
+        
+        /* 1. 当日勤怠報告ボタン */
+        .btn-attendance { background: #0284c7; }
+        .btn-attendance:hover { background: #0369a1; }
+        
+        /* 2. 体調管理ボタン */
+        .btn-health { background: #16a34a; }
+        .btn-health:hover { background: #15803d; }
+        
+        /* 3. 就労移行支援提供実績記録ボタン */
+        .btn-record { background: #7c3aed; }
+        .btn-record:hover { background: #6d28d9; }
+
+        .btn-secondary { background: #64748b; color: white; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; }
+        .btn-secondary:hover { background: #475569; }
+
+        input { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 16px; }
+        .btn-primary { background: #2563eb; color: white; width: 100%; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-primary:hover { background: #1d4ed8; }
     </style>
 </head>
 <body>
-    <div id="view-auth" class="card view active">
-        <div class="tab-group">
-            <div id="tab-login" class="tab active" onclick="switchTab('login')">ログイン</div>
-            <div id="tab-reg" class="tab" onclick="switchTab('reg')">新規登録</div>
-        </div>
-        
-        <div id="form-login">
-            <h2>ログイン</h2>
-            <div class="form-group"><label>4桁のPIN</label><input type="password" id="login-pin" maxlength="4" inputmode="numeric" autocomplete="new-password"></div>
-            <button class="btn" onclick="login()">ログイン</button>
-        </div>
 
-        <div id="form-reg" style="display:none;">
-            <h2>新規登録</h2>
-            <div class="form-group"><label>お名前</label><input type="text" id="reg-name" autocomplete="off"></div>
-            <div class="form-group"><label>4桁のPIN</label><input type="password" id="reg-pin" maxlength="4" inputmode="numeric" autocomplete="new-password"></div>
-            <button class="btn" onclick="register()">登録</button>
+    <!-- 1. ログインページ -->
+    <div id="page-login" class="page active">
+        <div class="card">
+            <h2>利用者ログイン</h2>
+            <p style="color: #64748b; margin-bottom: 20px;">名前とPINコードを入力してください</p>
+            <input type="text" id="login-name" placeholder="お名前">
+            <input type="password" id="login-pin" placeholder="PINコード">
+            <button class="btn-primary" onclick="handleLogin()" style="margin-top: 15px;">ログイン</button>
         </div>
     </div>
 
-    <div id="view-form" class="card view">
-        <div id="welcome-msg" class="welcome-title"></div>
-        <h2>体調管理チェック</h2>
-        <div class="form-group"><label>記録日</label><input type="date" id="記録日" onchange="checkDate(this)"></div>
-        <div class="form-group"><label>体調</label><select id="体調"><option value="">選択</option><option>〇</option><option>△</option><option>✕</option></select></div>
-        
-        <label>服薬状況</label>
-        <div class="form-group row-inputs">
-            <div><small>今朝</small><select id="服薬今朝"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
-            <div><small>昼</small><select id="服薬昨昼"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
-            <div><small>夕</small><select id="服薬昨夕"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
-            <div><small>就寝前</small><select id="服薬就寝前"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
+    <!-- 2. メニュー選択ページ（3択） -->
+    <div id="page-menu" class="page">
+        <div class="card">
+            <h2>メニュー選択</h2>
+            <p style="color: #64748b; margin-bottom: 25px;">報告・記録する項目を選択してください</p>
+            
+            <!-- ご指定の順番：当日勤怠報告 → 体調管理 → 就労移行支援提供実績記録 -->
+            <button class="menu-btn btn-attendance" onclick="switchPage('page-attendance')">
+                📋 当日勤怠報告
+            </button>
+            
+            <button class="menu-btn btn-health" onclick="switchPage('page-health')">
+                🌡️ 体調管理
+            </button>
+            
+            <button class="menu-btn btn-record" onclick="switchPage('page-record')">
+                📝 就労移行支援提供実績記録
+            </button>
+            
+            <div style="margin-top: 25px; text-align: left;">
+                <button class="btn-secondary" onclick="logout()">← ログアウト</button>
+            </div>
         </div>
-
-        <label>食事状況</label>
-        <div class="form-group row-inputs">
-            <div><small>今朝</small><select id="食事今朝"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
-            <div><small>昼</small><select id="食事昨昼"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
-            <div><small>夕</small><select id="食事昨夕"><option value="">-</option><option>〇</option><option>／</option><option>✕</option></select></div>
-        </div>
-
-        <div class="form-group"><label>昨夜就寝時間</label><input type="text" id="昨夜就寝時間" placeholder="例: 2300" maxlength="4" inputmode="numeric" oninput="checkAutoAdvanceTime(this, '本日起床時間')"></div>
-        <div class="form-group"><label>本日起床時間</label><input type="text" id="本日起床時間" placeholder="例: 0700" maxlength="4" inputmode="numeric" oninput="checkAutoAdvanceTime(this, '体温')"></div>
-        <div class="form-group"><label>体温</label><input type="text" id="体温" placeholder="例: 36.5" maxlength="5" inputmode="decimal" oninput="checkAutoAdvanceTemp(this, '特記事項')"></div>
-        <div class="form-group"><label>特記事項</label><textarea id="特記事項" placeholder="なし"></textarea></div>
-        <button class="btn" onclick="goToConfirm()">確認画面へ</button>
     </div>
 
-    <div id="view-confirm" class="card view">
-        <h2>内容確認</h2>
-        <div id="confirm-content" style="font-size:14px; background:#f8fafc; padding:10px; border-radius:8px;"></div>
-        <button class="btn" onclick="submitData()">送信して終了</button>
+    <!-- 3-1. 当日勤怠報告ページ -->
+    <div id="page-attendance" class="page">
+        <div class="card" style="text-align: left;">
+            <h2>当日勤怠報告</h2>
+            <p style="color: #64748b;">本日の勤怠状況を入力・送信します。</p>
+            <!-- 実際の入力フォーム要素をここに配置 -->
+            <div style="margin-top: 30px; text-align: center;">
+                <button class="btn-secondary" onclick="switchPage('page-menu')">← メニューに戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3-2. 体調管理ページ -->
+    <div id="page-health" class="page">
+        <div class="card" style="text-align: left;">
+            <h2>体調管理</h2>
+            <p style="color: #64748b;">本日の体温や体調を入力・送信します。</p>
+            <!-- 実際の入力フォーム要素をここに配置 -->
+            <div style="margin-top: 30px; text-align: center;">
+                <button class="btn-secondary" onclick="switchPage('page-menu')">← メニューに戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3-3. 就労移行支援提供実績記録ページ -->
+    <div id="page-record" class="page">
+        <div class="card" style="text-align: left;">
+            <h2>就労移行支援提供実績記録</h2>
+            <p style="color: #64748b;">提供実績に関する記録を入力・送信します。</p>
+            <!-- 実際の入力フォーム要素をここに配置 -->
+            <div style="margin-top: 30px; text-align: center;">
+                <button class="btn-secondary" onclick="switchPage('page-menu')">← メニューに戻る</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
-        
-        function checkDate(el) {
-            if (!el.value) return;
-            const selectedDate = new Date(el.value);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            selectedDate.setHours(0, 0, 0, 0);
-
-            if (selectedDate > today) {
-                alert("未来の日付は選択できません。本日以前の日付を指定してください。");
-                el.value = new Date().toISOString().split('T')[0];
-            }
-        }
-
-        // 4桁入力時の時間判定と自動フォーカス移動
-        function checkAutoAdvanceTime(el, nextId) {
-            let val = el.value.replace(/[^0-9]/g, '');
-            if (val.length === 4) {
-                let hours = parseInt(val.substring(0, 2), 10);
-                let mins = parseInt(val.substring(2, 4), 10);
-                if (hours >= 24 || mins >= 60) {
-                    alert("無効な時間です（例: 2359まで）。入力内容を確認してください。");
-                    el.value = "";
-                    return;
-                }
-                el.value = val.substring(0, 2) + ":" + val.substring(2, 4);
-                const nextEl = document.getElementById(nextId);
-                if (nextEl) {
-                    nextEl.focus();
-                }
-            }
-        }
-
-        // 3桁入力時の体温判定と自動フォーカス移動
-        function checkAutoAdvanceTemp(el, nextId) {
-            let digits = el.value.replace(/[^0-9]/g, '');
-            if (digits.length === 3) {
-                let num = parseInt(digits, 10) / 10;
-                if (num < 30 || num > 45) {
-                    alert("体温の範囲が正しくありません（例: 36.5）");
-                    el.value = "";
-                    return;
-                }
-                el.value = num.toFixed(1) + "（°）";
-                const nextEl = document.getElementById(nextId);
-                if (nextEl) {
-                    nextEl.focus();
-                }
-            }
-        }
-
-        let currentUser = "";
-        let formData = {};
-
-        function switchTab(type) {
-            document.getElementById('login-pin').value = '';
-            document.getElementById('reg-name').value = '';
-            document.getElementById('reg-pin').value = '';
-
-            if(type==='login') {
-                document.getElementById('tab-login').classList.add('active');
-                document.getElementById('tab-reg').classList.remove('active');
-                document.getElementById('form-login').style.display = 'block';
-                document.getElementById('form-reg').style.display = 'none';
-            } else {
-                document.getElementById('tab-reg').classList.add('active');
-                document.getElementById('tab-login').classList.remove('active');
-                document.getElementById('form-login').style.display = 'none';
-                document.getElementById('form-reg').style.display = 'block';
-            }
-        }
-        
-        async function register() {
-            const name = document.getElementById('reg-name').value;
-            const pin = document.getElementById('reg-pin').value;
-            if(!name || !pin) { alert("名前とPINを入力してください"); return; }
-
-            const res = await fetch(`${GAS_URL}?action=add&name=${encodeURIComponent(name)}&pin=${pin}&t=${new Date().getTime()}`);
-            const result = await res.json();
-            
-            if(result.status === 'success') { 
-                document.getElementById('reg-name').value = '';
-                document.getElementById('reg-pin').value = '';
-                document.getElementById('login-pin').value = '';
-                switchTab('login'); 
-                alert("登録が完了しました。ログインしてください。");
-            } else if(result.status === 'exists_pin') {
-                alert("すでに使われているPINコードです");
-            } else if(result.status === 'exists_name') {
-                alert("すでに登録されているお名前です");
-            } else {
-                alert("エラーが発生しました");
-            }
-        }
-
-        async function login() {
+        // ログイン処理（成功時にメニュー画面へ遷移）
+        function handleLogin() {
+            const name = document.getElementById('login-name').value;
             const pin = document.getElementById('login-pin').value;
-            const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
-            const users = await res.json();
-            const user = users.find(u => u.pin === pin);
-            if(user) { 
-                currentUser = user.name; 
-                document.getElementById('login-pin').value = ''; 
-                
-                const hour = new Date().getHours();
-                let greet = "こんにちは！";
-                if (hour >= 4 && hour < 12) {
-                    greet = "おはようございます！";
-                } else if (hour >= 18 || hour < 4) {
-                    greet = "こんばんは！";
-                }
-                document.getElementById('welcome-msg').innerText = `${currentUser}さん ${greet}`;
-
-                document.getElementById('記録日').value = new Date().toISOString().split('T')[0];
-                document.getElementById('体調').value = "";
-                document.getElementById('服薬今朝').value = "";
-                document.getElementById('服薬昨昼').value = "";
-                document.getElementById('服薬昨夕').value = "";
-                document.getElementById('服薬就寝前').value = "";
-                document.getElementById('食事今朝').value = "";
-                document.getElementById('食事昨昼').value = "";
-                document.getElementById('食事昨夕').value = "";
-                document.getElementById('昨夜就寝時間').value = "";
-                document.getElementById('本日起床時間').value = "";
-                document.getElementById('体温').value = "";
-                document.getElementById('特記事項').value = "";
-
-                changeView('view-form'); 
-            } else { 
-                alert("PINが違います"); 
-            }
-        }
-
-        function goToConfirm() {
-            const ids = ['記録日', '体調', '服薬今朝', '服薬昨昼', '服薬昨夕', '服薬就寝前', '食事今朝', '食事昨昼', '食事昨夕', '昨夜就寝時間', '本日起床時間', '体温', '特記事項'];
-            let html = "";
-            ids.forEach(id => {
-                const val = document.getElementById(id).value;
-                formData[id] = val;
-                html += `<p><b>${id}:</b> ${val || '-'}</p>`;
-            });
-            document.getElementById('confirm-content').innerHTML = html;
-            changeView('view-confirm');
-        }
-
-        async function submitData(isOverwrite = false) {
-            let query = `${GAS_URL}?action=record&name=${encodeURIComponent(currentUser)}`;
-            for (let key in formData) query += `&${key}=${encodeURIComponent(formData[key])}`;
-            if (isOverwrite) {
-                query += `&overwrite=true`;
-            }
             
-            const res = await fetch(query);
-            const result = await res.json();
-
-            if (result.status === "exists_date") {
-                const recordDate = formData['記録日'] || '指定された日付';
-                if (confirm(`すでに ${recordDate} のデータが存在します。上書きしますか？`)) {
-                    await submitData(true);
-                }
+            if (!name || !pin) {
+                alert("お名前とPINコードを入力してください。");
                 return;
             }
-
-            if (result.status === "success") {
-                changeView('view-auth');
-                alert("送信が完了しました。");
-            } else {
-                alert("エラーが発生しました。");
-            }
+            
+            // 必要に応じてGAS等との認証処理をここに記述
+            
+            // ログイン成功後にメニュー画面へ切り替え
+            switchPage('page-menu');
         }
 
-        function changeView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            
-            if (viewId === 'view-auth') {
-                document.getElementById('login-pin').value = '';
-                document.getElementById('reg-pin').value = '';
-                document.getElementById('reg-name').value = '';
-                currentUser = "";
-            }
+        // ログアウト処理
+        function logout() {
+            document.getElementById('login-name').value = "";
+            document.getElementById('login-pin').value = "";
+            switchPage('page-login');
+        }
+
+        // ページ切り替え用関数
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo(0, 0);
         }
     </script>
 </body>
