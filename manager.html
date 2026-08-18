@@ -43,7 +43,7 @@
             font-size: 14px;
         }
         th, td {
-            padding: 6px 10px;
+            padding: 8px 10px;
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
@@ -92,7 +92,7 @@
         <div class="card">
             <h2>利用者一覧・管理</h2>
             <div class="toolbar">
-                <button class="btn btn-secondary" onclick="loadUsers()">手動更新</button>
+                <button id="refresh-btn" class="btn btn-secondary" onclick="manualLoadUsers()">手動更新</button>
                 <button class="btn btn-primary" onclick="goToDetail()">選択詳細</button>
                 <button class="btn btn-danger" onclick="confirmAndDelete()">選択削除</button>
             </div>
@@ -139,7 +139,7 @@
         setInterval(loadUsers, 15000);
     });
 
-    async function loadUsers() {
+    async function loadUsers(isManual = false) {
         try {
             const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
             usersData = await res.json();
@@ -152,23 +152,30 @@
             }
 
             renderTable();
+            if (isManual) {
+                alert("最新のデータを取得しました。");
+            }
         } catch (e) {
             console.error(e);
+            if (isManual) {
+                alert("データの取得に失敗しました。");
+            }
             document.getElementById('user-table-body').innerHTML = `<tr><td colspan="4" style="text-align: center; color: red;">データの取得に失敗しました。</td></tr>`;
         }
     }
 
-    // どんな形式の日付でも確実に「yyyy/mm/dd」に変換する安全な関数
+    function manualLoadUsers() {
+        loadUsers(true);
+    }
+
     function formatDateOnly(dateStr) {
         if (!dateStr) return "";
         dateStr = String(dateStr).trim();
         
-        // スラッシュが含まれる形式（例: "2026/08/18 13:11"）の場合はスペースの前を抽出
         if (dateStr.includes('/')) {
             return dateStr.split(' ')[0];
         }
         
-        // 英語の曜日などが混ざった古い形式の場合はDateオブジェクトとしてパースして整形
         const d = new Date(dateStr);
         if (!isNaN(d.getTime())) {
             const y = d.getFullYear();
@@ -232,7 +239,7 @@
 
     function goToDetail() {
         if (selectedNames.size === 0) {
-            alert("詳細を表示するユーザーを選択してください。");
+            alert("詳細を表示するユーザーを「選択」ボタンで選んでから押してください。");
             return;
         }
 
