@@ -29,7 +29,7 @@
         .page { display: none; }
         .page.active { display: block; }
         
-        /* スマホで押しやすい大きめのメニューボタン */
+        /* スマホで押しやすい大きめのメニューボタン・丸文字風の視認性向上 */
         .menu-btn {
             display: block;
             width: 100%;
@@ -94,6 +94,18 @@
         
         h2 { font-size: 22px; margin-top: 0; margin-bottom: 10px; color: #1e293b; text-align: center; }
         p { font-size: 14px; color: #64748b; margin-bottom: 20px; text-align: center; }
+        
+        .greeting-banner {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 16px;
+            font-size: 17px;
+        }
     </style>
 </head>
 <body>
@@ -137,6 +149,9 @@
     <!-- 2. メニュー選択ページ（3択：ご指定の順番・大きめボタン） -->
     <div id="page-menu" class="page">
         <div class="card">
+            <!-- 本人確認用の挨拶表示エリア -->
+            <div id="greeting-area" class="greeting-banner">こんにちは 〇〇さん！</div>
+            
             <h2>メニュー選択</h2>
             <p>報告・記録する項目を選択してください</p>
             
@@ -262,8 +277,17 @@
 </div>
 
     <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyjTfqXz6mQQpE11uuimNDBUPG1o-fku3KsrCeaCO0icgiCk0yxKRg2iMW9WD5wUTNI/exec";
+
+        let currentUser = null;
+
         // タブ切り替え（ログイン / 新規登録）
         function switchTab(tab) {
+            // タブ切り替え時もPIN入力欄を強制クリア
+            document.getElementById('login-pin').value = "";
+            document.getElementById('reg-pin').value = "";
+            document.getElementById('reg-name').value = "";
+
             if (tab === 'login') {
                 document.getElementById('tab-login').classList.add('active');
                 document.getElementById('tab-register').classList.remove('active');
@@ -277,25 +301,66 @@
             }
         }
 
-        // ページ切り替え
+        // ページ切り替え時に認証画面に戻った場合、PIN欄を強制的に空白にする
         function switchPage(pageId) {
+            if (pageId === 'page-auth') {
+                document.getElementById('login-pin').value = "";
+                document.getElementById('reg-pin').value = "";
+                document.getElementById('reg-name').value = "";
+            }
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             window.scrollTo(0, 0);
         }
 
-        // ログイン処理（4PIN入力のみ）
-        function handleLogin() {
+        // ログイン処理（GASのユーザーシートと照合）
+        async function handleLogin() {
             const pin = document.getElementById('login-pin').value.trim();
             if (!pin || pin.length !== 4) {
                 alert("4桁のPINコードを入力してください。");
+                document.getElementById('login-pin').value = "";
                 return;
             }
-            switchPage('page-menu');
+
+            try {
+                const res = await fetch(GAS_URL + '?t=' + new Date().getTime());
+                const users = await res.json();
+                
+                // ユーザー検索（PIN一致かつ削除されていないユーザー）
+                const matchedUser = users.find(u => String(u.pin) === String(pin) && u.status !== "削除済み");
+
+                if (!matchedUser) {
+                    alert("PINコードが一致しません。登録されていないか、エラーがあります。");
+                    document.getElementById('login-pin').value = "";
+                    return;
+                }
+
+                currentUser = matchedUser.name;
+
+                // 時間帯別の挨拶を組み立てて表示
+                const hour = new Date().getHours();
+                let timeGreeting = "こんにちは";
+                if (hour >= 5 && hour < 12) {
+                    timeGreeting = "おはようございます";
+                } else if (hour >= 18 || hour < 5) {
+                    timeGreeting = "こんばんは";
+                }
+
+                document.getElementById('greeting-area').innerText = `${timeGreeting} ${currentUser}さん！`;
+
+                // ログイン成功後にPIN欄を強制クリアしてからメニュー画面へ
+                document.getElementById('login-pin').value = "";
+                switchPage('page-menu');
+
+            } catch (e) {
+                console.error(e);
+                alert("サーバーとの通信に失敗しました。");
+                document.getElementById('login-pin').value = "";
+            }
         }
 
         // 新規登録処理
-        function handleRegister() {
+        async function handleRegister() {
             const name = document.getElementById('reg-name').value.trim();
             const pin = document.getElementById('reg-pin').value.trim();
             if (!name) {
@@ -304,21 +369,43 @@
             }
             if (!pin || pin.length !== 4) {
                 alert("4桁のPINコードを設定してください。");
+                document.getElementById('reg-pin').value = "";
                 return;
             }
-            alert("登録が完了しました。ログインタブからPINコードでログインしてください。");
-            document.getElementById('reg-name').value = "";
-            document.getElementById('reg-pin').value = "";
-            switchTab('login');
+
+            try {
+                const res = await fetch(`${GAS_URL}?action=add&name=${encodeURIComponent(name)}&pin=${encodeURIComponent(pin)}`);
+                const result = await res.json();
+
+                if (result.status === "exists_pin") {
+                    alert("この4桁PINコードは既に他のユーザーに使用されています。");
+                    document.getElementById('reg-pin').value = "";
+                    return;
+                }
+                if (result.status === "exists_name") {
+                    alert("このお名前は既に登録されています。");
+                    return;
+                }
+
+                alert("登録が完了しました。ログインタブからPINコードでログインしてください。");
+                document.getElementById('reg-name').value = "";
+                document.getElementById('reg-pin').value = "";
+                switchTab('login');
+
+            } catch (e) {
+                console.error(e);
+                alert("登録処理に失敗しました。");
+            }
         }
 
         // ログアウト処理
         function logout() {
+            currentUser = null;
             document.getElementById('login-pin').value = "";
             switchPage('page-auth');
         }
 
-        // 送信処理（必要に応じてGAS連携部分を記述）
+        // 各種送信処理（スタブ）
         function submitAttendance() {
             alert("当日勤怠報告を送信しました。");
             switchPage('page-menu');
